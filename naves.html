@@ -30,9 +30,31 @@
         </div>
         <div class="derecha">
             <h3 class="tituloPuntuaciones">MEJORES PUNTUACIONES</h3>
-            <ul id="puntuaciones"></ul>
+            <table id="puntuaciones">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Fecha</th>
+                        <th>Puntos</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
         <div class="juego">
+            <div id="overlay" class="overlay">
+                <div class="overlay-content">
+                    <div id="startContent">
+                        <h2>INGRESA TU NOMBRE</h2>
+                        <input id="playerName" type="text" maxlength="12" placeholder="Tu nombre..." />
+                        <button id="startButton">Jugar</button>
+                    </div>
+                    <div id="endContent" class="hidden">
+                        <p id="finalText"></p>
+                        <button id="restartButton">Volver a jugar</button>
+                    </div>
+                </div>
+            </div>
             <canvas id="canvas" width="600" height="650">TU NAVEGADOR NO SOPORTA HTML5!</canvas>
         </div>
 

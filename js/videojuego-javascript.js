@@ -63,7 +63,17 @@ var game = (function () {
         },
         nextPlayerShot = 0,
         playerShotDelay = 250,
-        now = 0;
+        now = 0,
+        playerName = '',
+        overlay,
+        startContent,
+        endContent,
+        nameInput,
+        startButton,
+        restartButton,
+        finalText,
+        finalAnimationTick = 0,
+        gameStarted = false;
 
     function loop() {
         update();
@@ -108,20 +118,75 @@ var game = (function () {
         buffer.height = canvas.height;
         bufferctx = buffer.getContext('2d');
 
-        player = new Player(playerLife, 0);
-        evilCounter = 1;
-        createNewEvil();
-
-        showLifeAndScore();
+        overlay = document.getElementById('overlay');
+        startContent = document.getElementById('startContent');
+        endContent = document.getElementById('endContent');
+        nameInput = document.getElementById('playerName');
+        startButton = document.getElementById('startButton');
+        restartButton = document.getElementById('restartButton');
+        finalText = document.getElementById('finalText');
 
         addListener(document, 'keydown', keyDown);
         addListener(document, 'keyup', keyUp);
+        addListener(startButton, 'click', startGame);
+        addListener(restartButton, 'click', function() {
+            showOverlay('start');
+        });
+        addListener(nameInput, 'keydown', function (e) {
+            var key = (window.event ? e.keyCode : e.which);
+            if (key === 13) {
+                e.preventDefault();
+                startGame();
+            }
+        });
+
+        showOverlay('start');
 
         function anim () {
             loop();
             requestAnimFrame(anim);
         }
         anim();
+    }
+
+    function showOverlay(type) {
+        overlay.classList.remove('hidden');
+        if (type === 'start') {
+            startContent.classList.remove('hidden');
+            endContent.classList.add('hidden');
+            nameInput.value = playerName || '';
+            nameInput.focus();
+        } else {
+            startContent.classList.add('hidden');
+            endContent.classList.remove('hidden');
+        }
+    }
+
+    function hideOverlay() {
+        overlay.classList.add('hidden');
+    }
+
+    function startGame() {
+        playerName = nameInput.value.trim() || 'Jugador';
+        resetGameState();
+        hideOverlay();
+        gameStarted = true;
+    }
+
+    function resetGameState() {
+        playerLife = 3;
+        totalEvils = 7;
+        evilCounter = 1;
+        youLoose = false;
+        congratulations = false;
+        playerShotsBuffer = [];
+        evilShotsBuffer = [];
+        now = 0;
+        nextPlayerShot = 0;
+        finalAnimationTick = 0;
+        player = new Player(playerLife, 0);
+        createNewEvil();
+        showLifeAndScore();
     }
 
     function showLifeAndScore () {
@@ -185,6 +250,8 @@ var game = (function () {
             } else {
                 saveFinalScore();
                 youLoose = true;
+                finalText.innerHTML = 'GAME OVER, ' + playerName + '.';
+                showOverlay('end');
             }
         };
 
@@ -338,6 +405,8 @@ var game = (function () {
             setTimeout(function() {
                 saveFinalScore();
                 congratulations = true;
+                finalText.innerHTML = '¡ENHORABUENA, ' + playerName + '! Has ganado.';
+                showOverlay('end');
             }, 2000);
 
         }
@@ -416,12 +485,20 @@ var game = (function () {
     }
 
     function showCongratulations () {
-        bufferctx.fillStyle="rgb(204,50,153)";
-        bufferctx.font="bold 22px Arial";
-        bufferctx.fillText("Enhorabuena, te has pasado el juego!", canvas.width / 2 - 200, canvas.height / 2 - 30);
-        bufferctx.fillText("PUNTOS: " + player.score, canvas.width / 2 - 200, canvas.height / 2);
-        bufferctx.fillText("VIDAS: " + player.life + " x 5", canvas.width / 2 - 200, canvas.height / 2 + 30);
-        bufferctx.fillText("PUNTUACION TOTAL: " + getTotalScore(), canvas.width / 2 - 200, canvas.height / 2 + 60);
+        finalAnimationTick++;
+        var pulseColor = (finalAnimationTick % 30 < 15) ? "rgb(255,255,0)" : "rgb(255,255,255)";
+        bufferctx.fillStyle = pulseColor;
+        bufferctx.font = "bold 24px Arial";
+        bufferctx.fillText("¡ENHORABUENA, " + playerName + "!", canvas.width / 2 - 210, canvas.height / 2 - 40);
+        bufferctx.font = "bold 22px Arial";
+        bufferctx.fillText("PUNTOS: " + player.score, canvas.width / 2 - 210, canvas.height / 2);
+        bufferctx.fillText("VIDAS: " + player.life + " x 5", canvas.width / 2 - 210, canvas.height / 2 + 35);
+        bufferctx.fillText("TOTAL: " + getTotalScore(), canvas.width / 2 - 210, canvas.height / 2 + 70);
+        for (var i = 0; i < 6; i++) {
+            bufferctx.beginPath();
+            bufferctx.arc(80 + i * 90, 120 + ((finalAnimationTick * (i + 1)) % 40), 6, 0, Math.PI * 2);
+            bufferctx.fill();
+        }
     }
 
     function getTotalScore() {
@@ -431,6 +508,10 @@ var game = (function () {
     function update() {
 
         drawBackground();
+
+        if (!gameStarted) {
+            return;
+        }
 
         if (congratulations) {
             showCongratulations();
@@ -517,14 +598,15 @@ var game = (function () {
 
     /******************************* MEJORES PUNTUACIONES (LOCALSTORAGE) *******************************/
     function saveFinalScore() {
-        localStorage.setItem(getFinalScoreDate(), getTotalScore());
+        var scoreRecord = { name: playerName || 'Jugador', score: getTotalScore() };
+        localStorage.setItem(getFinalScoreDate(), JSON.stringify(scoreRecord));
         showBestScores();
         removeNoBestScores();
     }
 
     function getFinalScoreDate() {
         var date = new Date();
-        return fillZero(date.getDay()+1)+'/'+
+        return fillZero(date.getDate())+'/'+
             fillZero(date.getMonth()+1)+'/'+
             date.getFullYear()+' '+
             fillZero(date.getHours())+':'+
@@ -540,55 +622,82 @@ var game = (function () {
     }
 
     function getBestScoreKeys() {
-        var bestScores = getAllScores();
-        bestScores.sort(function (a, b) {return b - a;});
-        bestScores = bestScores.slice(0, totalBestScoresToShow);
-        var bestScoreKeys = [];
-        for (var j = 0; j < bestScores.length; j++) {
-            var score = bestScores[j];
-            for (var i = 0; i < localStorage.length; i++) {
-                var key = localStorage.key(i);
-                if (parseInt(localStorage.getItem(key)) == score) {
-                    bestScoreKeys.push(key);
-                }
-            }
-        }
-        return bestScoreKeys.slice(0, totalBestScoresToShow);
+        var allScores = getAllScores();
+        allScores.sort(function (a, b) { return b.score - a.score; });
+        allScores = allScores.slice(0, totalBestScoresToShow);
+        return allScores.map(function (item) { return item.key; });
     }
 
     function getAllScores() {
         var all = [];
-        for (var i=0; i < localStorage.length; i++) {
-            all[i] = (localStorage.getItem(localStorage.key(i)));
+        for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            var value = localStorage.getItem(key);
+            try {
+                var record = JSON.parse(value);
+                if (record && !isNaN(record.score)) {
+                    all.push({ key: key, score: parseInt(record.score, 10), name: record.name || 'Jugador' });
+                    continue;
+                }
+            } catch (e) {
+                // Ignorar registros no JSON
+            }
+            if (!isNaN(parseInt(value, 10))) {
+                all.push({ key: key, score: parseInt(value, 10), name: 'Jugador' });
+            }
         }
         return all;
     }
 
     function showBestScores() {
         var bestScores = getBestScoreKeys();
-        var bestScoresList = document.getElementById('puntuaciones');
-        if (bestScoresList) {
-            clearList(bestScoresList);
-            for (var i=0; i < bestScores.length; i++) {
-                addListElement(bestScoresList, bestScores[i], i==0?'negrita':null);
-                addListElement(bestScoresList, localStorage.getItem(bestScores[i]), i==0?'negrita':null);
+        var bestScoresBody = document.querySelector('#puntuaciones tbody');
+        if (bestScoresBody) {
+            bestScoresBody.innerHTML = '';
+            for (var i = 0; i < bestScores.length; i++) {
+                var record;
+                try {
+                    record = JSON.parse(localStorage.getItem(bestScores[i]));
+                } catch (e) {
+                    record = null;
+                }
+                if (!record) {
+                    var fallbackScore = parseInt(localStorage.getItem(bestScores[i]), 10);
+                    record = { name: 'Jugador', score: isNaN(fallbackScore) ? 0 : fallbackScore };
+                }
+                var row = document.createElement('tr');
+                if (i === 0) {
+                    row.className = 'podium-1';
+                } else if (i === 1) {
+                    row.className = 'podium-2';
+                } else if (i === 2) {
+                    row.className = 'podium-3';
+                }
+                var medal = '';
+                if (i === 0) {
+                    medal = '🥇 ';
+                } else if (i === 1) {
+                    medal = '🥈 ';
+                } else if (i === 2) {
+                    medal = '🥉 ';
+                }
+                row.appendChild(createCell(record.name));
+                row.children[0].textContent = medal + row.children[0].textContent;
+                var displayDate = bestScores[i];
+                if (typeof displayDate === 'string' && displayDate.indexOf(' ') !== -1) {
+                    displayDate = displayDate.split(' ')[0];
+                }
+                row.appendChild(createCell(displayDate));
+                row.appendChild(createCell(record.score));
+                bestScoresBody.appendChild(row);
             }
         }
     }
 
-    function clearList(list) {
-        list.innerHTML = '';
-        addListElement(list, "Fecha");
-        addListElement(list, "Puntos");
-    }
-
-    function addListElement(list, content, className) {
-        var element = document.createElement('li');
-        if (className) {
-            element.setAttribute("class", className);
-        }
-        element.innerHTML = content;
-        list.appendChild(element);
+    function createCell(content) {
+        var cell = document.createElement('td');
+        cell.textContent = content;
+        return cell;
     }
 
     // extendemos el objeto array con un metodo "containsElement"
