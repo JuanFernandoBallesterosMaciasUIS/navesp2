@@ -31,21 +31,25 @@ div.juego canvas {
 }
 div.derecha {
     float: right;
+    width: 320px;
+    margin-right: 10px;
 }
 div.derecha h3.tituloPuntuaciones {
     background: url("../images/medalla.png") no-repeat left;
     padding: 10px;
 }
 div.derecha table#puntuaciones {
-    width: 300px;
-    margin: 0 auto;
+    width: 100%;
+    margin: 0;
     border-collapse: collapse;
+    border: 1px solid #000;
+    box-sizing: border-box;
 }
 
 div.derecha table#puntuaciones th,
 div.derecha table#puntuaciones td {
     padding: 10px 6px;
-    border-bottom: 1px solid #aaa;
+    border: 1px solid #000;
     text-align: left;
     font-size: 14px;
 }

@@ -406,7 +406,10 @@ var game = (function () {
                 saveFinalScore();
                 congratulations = true;
                 finalText.innerHTML = '¡ENHORABUENA, ' + playerName + '! Has ganado.';
-                showOverlay('end');
+                setTimeout(function() {
+                    showOverlay('end');
+                    congratulations = false;
+                }, 2000);
             }, 2000);
 
         }
@@ -683,11 +686,6 @@ var game = (function () {
                 }
                 row.appendChild(createCell(record.name));
                 row.children[0].textContent = medal + row.children[0].textContent;
-                var displayDate = bestScores[i];
-                if (typeof displayDate === 'string' && displayDate.indexOf(' ') !== -1) {
-                    displayDate = displayDate.split(' ')[0];
-                }
-                row.appendChild(createCell(displayDate));
                 row.appendChild(createCell(record.score));
                 bestScoresBody.appendChild(row);
             }
