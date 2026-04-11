@@ -23,35 +23,115 @@ div.izquierda {
     text-align: left;
 }
 div.juego {
-
+    position: relative;
+    display: inline-block;
 }
 div.juego canvas {
     box-shadow: 0 0 30px #000;
 }
 div.derecha {
     float: right;
+    width: 320px;
+    margin-right: 10px;
 }
 div.derecha h3.tituloPuntuaciones {
     background: url("../images/medalla.png") no-repeat left;
     padding: 10px;
 }
-div.derecha ul#puntuaciones {
-    width: 300px;
+div.derecha table#puntuaciones {
+    width: 100%;
     margin: 0;
-    padding: 0;
-    list-style: none;
+    border-collapse: collapse;
+    border: 1px solid #000;
+    box-sizing: border-box;
 }
 
-div.derecha ul#puntuaciones li{
-    line-height:1.5em;
-    border-bottom:1px solid #aaa;
-    float:left;
-    display:inline;
-    width: 50%;
-    padding: 10px 0;
+div.derecha table#puntuaciones th,
+div.derecha table#puntuaciones td {
+    padding: 10px 6px;
+    border: 1px solid #000;
+    text-align: left;
+    font-size: 14px;
+}
+
+div.derecha table#puntuaciones th {
+    font-weight: bold;
+}
+div.derecha table#puntuaciones tr.negrita td {
+    font-weight: bold;
+}
+div.derecha table#puntuaciones tr.podium-1 td {
+    background: #ffd700;
+    color: #000;
+}
+div.derecha table#puntuaciones tr.podium-2 td {
+    background: #c0c0c0;
+    color: #000;
+}
+div.derecha table#puntuaciones tr.podium-3 td {
+    background: #cd7f32;
+    color: #000;
+}
+div.derecha table#puntuaciones tr.podium-1 td,
+div.derecha table#puntuaciones tr.podium-2 td,
+div.derecha table#puntuaciones tr.podium-3 td {
+    font-weight: bold;
 }
 .negrita {
     font-weight: bold;
+}
+div.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+div.overlay.hidden {
+    display: none;
+}
+div.overlay-content {
+    background: #111;
+    color: #fff;
+    padding: 25px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 320px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.6);
+}
+div.overlay-content h2 {
+    margin: 0 0 15px;
+    font-size: 20px;
+}
+div.overlay-content input {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    margin-bottom: 12px;
+    border: 1px solid #555;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+div.overlay-content button {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    background: #4caf50;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+div.overlay-content button:hover {
+    background: #45a049;
+}
+div.overlay-content .hidden {
+    display: none;
 }
 ul.lista {
     margin: 25px 0;
