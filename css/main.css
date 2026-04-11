@@ -11,6 +11,11 @@ a {
 a:hover {
     color: #ff4500;
 }
+/* Placeholders de navegación sin href — misma apariencia que los enlaces */
+.nav-placeholder {
+    color: #506e2f;
+    cursor: default;
+}
 div.contenedor {
     width: 100%;
     margin: 0 auto;

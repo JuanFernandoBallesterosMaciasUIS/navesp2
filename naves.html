@@ -1,10 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
+    
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>Videojuego con Javascript y HTML5</title>
-    <link type="text/css" rel="stylesheet" href="css/main.css?14042012">
-    <script src="js/videojuego-javascript.js?04042012" type="text/javascript"></script>
+    <link type="text/css" rel="stylesheet" href="css/reset.css?20260410">
+    <link type="text/css" rel="stylesheet" href="css/main.css?20260410">
+    <!-- Orden de carga obligatorio: config → utils → entities → scores → game -->
+    <script src="js/config.js?20260410"   type="text/javascript"></script>
+    <script src="js/utils.js?20260410"    type="text/javascript"></script>
+    <script src="js/entities.js?20260410" type="text/javascript"></script>
+    <script src="js/scores.js?20260410"   type="text/javascript"></script>
+    <script src="js/game.js?20260410"     type="text/javascript"></script>
 </head>
 <body onload="game.init()">
     <div class="contenedor">
@@ -24,8 +31,8 @@
             </ul>
             <ul class="lista">
                 <li class="titulo">OTROS:</li>
-                <li><a>Tutorial</a></li>
-                <li><a>Especificaciones del juego</a></li>
+                <li><span class="nav-placeholder">Tutorial</span></li>
+                <li><span class="nav-placeholder">Especificaciones del juego</span></li>
             </ul>
         </div>
         <div class="derecha">
