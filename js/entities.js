@@ -242,7 +242,7 @@ function Player(life, score) {
     };
 
     player.killPlayer = function() {
-        if (this.life > 0) {
+        if (this.life > 1) {
             this.dead = true;
             evilShotsBuffer.splice(0, evilShotsBuffer.length);
             playerShotsBuffer.splice(0, playerShotsBuffer.length);
