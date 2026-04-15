@@ -134,6 +134,37 @@
                             </button>
                         </div>
                     </div>
+                    <div id="gameOverContent" class="hidden">
+                        <h2 style="color: #ff6b6b; font-size: 48px; margin-bottom: 20px;"> GAME OVER 💀</h2>
+                        <p style="font-size: 24px; color: #81c784; margin-bottom: 10px;">¡Inténtalo de nuevo!</p>
+                        <p style="font-size: 18px; color: #fff; margin-bottom: 30px;">Puntos: <span style="color: #ffeb3b;" id="gameOverScore">0</span></p>
+                        <div class="menu-buttons">
+                            <button id="gameOverRestartButton" class="btn btn-primary">
+                                <span class="btn-icon"></span> VOLVER A JUGAR
+                            </button>
+                            <button id="gameOverMenuButton" class="btn btn-secondary">
+                                <span class="btn-icon"></span> IR AL MENÚ
+                            </button>
+                        </div>
+                    </div>
+                    <div id="victoryContent" class="hidden">
+                        <h2 style="color: #ffeb3b; font-size: 48px; margin-bottom: 10px;">¡VICTORIA! ⭐</h2>
+                        <p style="font-size: 22px; color: #81c784; margin-bottom: 20px;">¡Enhorabuena, <span id="victoryPlayerName">Jugador</span>!</p>
+                        <div style="background: rgba(76, 175, 80, 0.15); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                            <p style="color: #fff; margin: 10px 0;"><span style="color: #81c784;">Puntos Acumulados:</span> <span style="color: #ffeb3b;" id="victoryScore">0</span></p>
+                            <p style="color: #fff; margin: 10px 0;"><span style="color: #81c784;">Vidas Restantes:</span> <span style="color: #ff6b6b;" id="victoryHearts">❤️</span></p>
+                            <p style="color: #fff; margin: 10px 0;"><span style="color: #81c784;">Bonus Vidas:</span> <span style="color: #4caf50;" id="victoryBonus">+0</span></p>
+                            <p style="color: #ffeb3b; margin: 15px 0 0 0; font-size: 20px; font-weight: bold; border-top: 2px solid rgba(129, 199, 132, 0.3); padding-top: 15px;">PUNTUACIÓN TOTAL: <span id="victoryTotal">0</span></p>
+                        </div>
+                        <div class="menu-buttons">
+                            <button id="victoryRestartButton" class="btn btn-primary">
+                                <span class="btn-icon"></span> VOLVER A JUGAR
+                            </button>
+                            <button id="victoryMenuButton" class="btn btn-secondary">
+                                <span class="btn-icon"></span> IR AL MENÚ
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <canvas id="canvas" width="600" height="650">TU NAVEGADOR NO SOPORTA HTML5!</canvas>

@@ -96,6 +96,7 @@ function Enemy(life, shots, enemyImages) {
     this.posX = getRandomNumber(canvas.width - this.image.width);
     this.posY = -50;
     this.life = life ? life : evilLife;
+    this.maxLife = this.life;
     this.speed = evilSpeed;
     this.shots = shots ? shots : evilShots;
     this.dead = false;
@@ -255,7 +256,7 @@ function Player(life, score) {
             saveFinalScore();
             youLose = true;
             finalText.textContent = 'GAME OVER, ' + playerName + '.';
-            showOverlay('end');
+            showOverlay('gameOver');
         }
     };
 
