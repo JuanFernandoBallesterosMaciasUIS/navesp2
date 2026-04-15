@@ -366,7 +366,15 @@ function showLifeAndScore() {
     bufferctx.fillStyle = 'rgb(59,59,59)';
     bufferctx.font = 'bold 16px Arial';
     bufferctx.fillText('Puntos: ' + player.score, canvas.width - 100, 20);
-    bufferctx.fillText('Vidas: ' + player.life,   canvas.width - 100, 40);
+    
+    // Dibujar corazones rojos en lugar de número de vidas
+    bufferctx.fillStyle = '#FF0000';
+    bufferctx.font = 'bold 24px Arial';
+    var hearts = '';
+    for (var i = 0; i < player.life; i++) {
+        hearts += '\u2665 ';
+    }
+    bufferctx.fillText(hearts, canvas.width - 100, 45);
 }
 
 /** Dibuja el texto "GAME OVER" centrado en el buffer durante el estado de derrota. */
@@ -388,7 +396,16 @@ function showCongratulations() {
     bufferctx.fillText('¡ENHORABUENA, ' + playerName + '!', canvas.width / 2 - 210, canvas.height / 2 - 40);
     bufferctx.font = 'bold 22px Arial';
     bufferctx.fillText('PUNTOS: ' + player.score,      canvas.width / 2 - 210, canvas.height / 2);
-    bufferctx.fillText('VIDAS: ' + player.life + ' x ' + CONFIG.SCORE_LIFE_BONUS, canvas.width / 2 - 210, canvas.height / 2 + 35);
+    
+    // Mostrar vidas restantes como corazones rojos
+    bufferctx.fillStyle = '#FF0000';
+    var hearts = '';
+    for (var i = 0; i < player.life; i++) {
+        hearts += '\u2665 ';
+    }
+    bufferctx.fillText('VIDAS: ' + hearts + ' x ' + CONFIG.SCORE_LIFE_BONUS, canvas.width / 2 - 210, canvas.height / 2 + 35);
+    
+    bufferctx.fillStyle = pulseColor;
     bufferctx.fillText('TOTAL: ' + getTotalScore(),    canvas.width / 2 - 210, canvas.height / 2 + 70);
     for (var i = 0; i < 6; i++) {
         bufferctx.beginPath();
