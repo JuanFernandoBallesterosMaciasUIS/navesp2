@@ -50,14 +50,89 @@
         <div class="juego">
             <div id="overlay" class="overlay">
                 <div class="overlay-content">
-                    <div id="startContent">
+                    <div id="mainMenuContent" class="main-menu">
+                        <div class="menu-logo">
+                            <img src="images/logo.png" alt="Naves Logo" class="logo-img">
+                        </div>
+                        <h1 class="menu-title">SPACE SHOOTER</h1>
+                        <p class="menu-subtitle">¡Destruye todos los enemigos!</p>
+                        <div class="menu-buttons">
+                            <button id="playButton" class="btn btn-primary">
+                                <span class="btn-icon"></span> JUGAR
+                            </button>
+                            <button id="tutorialButton" class="btn btn-secondary">
+                                <span class="btn-icon"></span> TUTORIAL
+                            </button>
+                            <button id="optionsButton" class="btn btn-secondary">
+                                <span class="btn-icon"></span> OPCIONES
+                            </button>
+                            <button id="quitButton" class="btn btn-secondary">
+                                <span class="btn-icon"></span> SALIR
+                            </button>
+                        </div>
+                    </div>
+                    <div id="startContent" class="hidden">
                         <h2>INGRESA TU NOMBRE</h2>
                         <input id="playerName" type="text" maxlength="12" placeholder="Tu nombre..." />
-                        <button id="startButton">Jugar</button>
+                        <div class="menu-buttons">
+                            <button id="startButton" class="btn btn-primary">
+                                <span class="btn-icon"></span>JUGAR
+                            </button>
+                            <button id="backButton" class="btn btn-secondary">
+                                <span class="btn-icon"></span> ATRÁS
+                            </button>
+                        </div>
+                    </div>
+                    <div id="tutorialContent" class="hidden">
+                        <h2>TUTORIAL</h2>
+                        <p style="text-align: left; font-size: 14px; line-height: 1.8; color: #ddd;">
+                            <strong style="color: #81c784;"> Objetivo:</strong><br>
+                            Elimina todos los enemigos para ganar la partida.<br><br>
+                            <strong style="color: #81c784;"> Controles:</strong><br>
+                            <span style="margin-left: 10px;">◀ Flecha Izquierda - Mover izquierda</span><br>
+                            <span style="margin-left: 10px;">▶ Flecha Derecha - Mover derecha</span><br>
+                            <span style="margin-left: 10px;">Space - Disparar</span><br>
+                            <span style="margin-left: 10px;">ESC - Pausar/Reanudar</span><br><br>
+                            <strong style="color: #81c784;">Enemigos:</strong><br>
+                            Destruye todos para avanzar.<br><br>
+                            <strong style="color: #81c784;">Consejos:</strong><br>
+                            Evita disparos y recolecta puntos!
+                        </p>
+                        <button id="backFromTutorialButton" class="btn btn-secondary" style="margin-top: 15px;">
+                            <span class="btn-icon">◀</span> ATRÁS
+                        </button>
+                    </div>
+                    <div id="optionsContent" class="hidden">
+                        <h2>OPCIONES</h2>
+                        <p style="color: #81c784;">Configuración del juego</p>
+                        <p style="margin: 20px 0; padding: 15px; background: rgba(76, 175, 80, 0.1); border-left: 3px solid #4caf50;">
+                             Sonido y música (próximas versiones)<br>
+                             Temas visuales (próximas versiones)<br>
+                             Personalizar controles (próximas versiones)
+                        </p>
+                        <button id="backFromOptionsButton" class="btn btn-secondary">
+                            <span class="btn-icon">◀</span> ATRÁS
+                        </button>
                     </div>
                     <div id="endContent" class="hidden">
                         <p id="finalText"></p>
-                        <button id="restartButton">Volver a jugar</button>
+                        <div class="menu-buttons" style="margin-top: 20px;">
+                            <button id="restartButton" class="btn btn-primary">
+                                <span class="btn-icon"></span> VOLVER A JUGAR
+                            </button>
+                        </div>
+                    </div>
+                    <div id="pauseContent" class="hidden">
+                        <h2>⏸ PAUSA</h2>
+                        <p style="margin-bottom: 25px; color: #81c784;">El juego está pausado</p>
+                        <div class="menu-buttons">
+                            <button id="resumeButton" class="btn btn-primary">
+                                <span class="btn-icon"></span> REANUDAR
+                            </button>
+                            <button id="exitButton" class="btn btn-secondary">
+                                <span class="btn-icon"></span> IR AL MENÚ
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
