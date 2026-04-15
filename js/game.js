@@ -52,7 +52,8 @@ var keyPressed = {};
 var keyMap = {
     left:  37,
     right: 39,
-    fire:  32     // tecla espacio
+    fire:  32,    // tecla espacio
+    pause: 27     // tecla ESC
 };
 
 var nextPlayerShot  = 0;
@@ -60,9 +61,13 @@ var playerShotDelay = CONFIG.PLAYER_SHOT_DELAY;
 var now             = 0;
 var playerName      = '';
 
-var overlay, startContent, endContent, nameInput, startButton, restartButton, finalText;
+var overlay, startContent, endContent, pauseContent, mainMenuContent, tutorialContent, optionsContent;
+var nameInput, startButton, restartButton, resumeButton, exitButton, finalText;
+var playButton, backButton, tutorialButton, optionsButton, quitButton;
+var backFromTutorialButton, backFromOptionsButton;
 var finalAnimationTick = 0;
 var gameStarted = false;
+var gamePaused = false;
 
 /******************************* CARGA DE IMÁGENES *******************************/
 
@@ -106,16 +111,55 @@ function init() {
     overlay       = document.getElementById('overlay');
     startContent  = document.getElementById('startContent');
     endContent    = document.getElementById('endContent');
+    pauseContent  = document.getElementById('pauseContent');
+    mainMenuContent = document.getElementById('mainMenuContent');
+    tutorialContent = document.getElementById('tutorialContent');
+    optionsContent  = document.getElementById('optionsContent');
     nameInput     = document.getElementById('playerName');
     startButton   = document.getElementById('startButton');
     restartButton = document.getElementById('restartButton');
+    resumeButton  = document.getElementById('resumeButton');
+    exitButton    = document.getElementById('exitButton');
     finalText     = document.getElementById('finalText');
+    playButton    = document.getElementById('playButton');
+    backButton    = document.getElementById('backButton');
+    tutorialButton = document.getElementById('tutorialButton');
+    optionsButton = document.getElementById('optionsButton');
+    quitButton    = document.getElementById('quitButton');
+    backFromTutorialButton = document.getElementById('backFromTutorialButton');
+    backFromOptionsButton = document.getElementById('backFromOptionsButton');
 
     addListener(document, 'keydown', keyDown);
     addListener(document, 'keyup', keyUp);
     addListener(startButton, 'click', startGame);
     addListener(restartButton, 'click', function() {
-        showOverlay('start');
+        showOverlay('mainMenu');
+    });
+    addListener(resumeButton, 'click', togglePause);
+    addListener(exitButton, 'click', function() {
+        gamePaused = false;
+        showOverlay('mainMenu');
+    });
+    addListener(playButton, 'click', function() {
+        showOverlay('nameInput');
+    });
+    addListener(backButton, 'click', function() {
+        showOverlay('mainMenu');
+    });
+    addListener(tutorialButton, 'click', function() {
+        showOverlay('tutorial');
+    });
+    addListener(optionsButton, 'click', function() {
+        showOverlay('options');
+    });
+    addListener(quitButton, 'click', function() {
+        alert('¡Gracias por jugar!');
+    });
+    addListener(backFromTutorialButton, 'click', function() {
+        showOverlay('mainMenu');
+    });
+    addListener(backFromOptionsButton, 'click', function() {
+        showOverlay('mainMenu');
     });
     addListener(nameInput, 'keydown', function (e) {
         var key = (window.event ? e.keyCode : e.which);
@@ -125,7 +169,7 @@ function init() {
         }
     });
 
-    showOverlay('start');
+    showOverlay('mainMenu');
 
     function anim() {
         loop();
@@ -136,24 +180,54 @@ function init() {
 
 /**
  * Muestra el overlay con el contenido especificado.
- * @param {'start'|'end'} type - 'start' para el formulario de inicio; 'end' para la pantalla de fin.
+ * @param {'mainMenu'|'nameInput'|'tutorial'|'options'|'end'|'pause'} type - El tipo de overlay a mostrar.
  */
 function showOverlay(type) {
     overlay.classList.remove('hidden');
-    if (type === 'start') {
+    
+    // Ocultar todos primero
+    mainMenuContent.classList.add('hidden');
+    startContent.classList.add('hidden');
+    endContent.classList.add('hidden');
+    pauseContent.classList.add('hidden');
+    tutorialContent.classList.add('hidden');
+    optionsContent.classList.add('hidden');
+    
+    if (type === 'mainMenu') {
+        mainMenuContent.classList.remove('hidden');
+        gameStarted = false;
+        gamePaused = false;
+    } else if (type === 'nameInput') {
         startContent.classList.remove('hidden');
-        endContent.classList.add('hidden');
         nameInput.value = playerName || '';
         nameInput.focus();
-    } else {
-        startContent.classList.add('hidden');
+    } else if (type === 'tutorial') {
+        tutorialContent.classList.remove('hidden');
+    } else if (type === 'options') {
+        optionsContent.classList.remove('hidden');
+    } else if (type === 'end') {
         endContent.classList.remove('hidden');
+    } else if (type === 'pause') {
+        pauseContent.classList.remove('hidden');
+        resumeButton.focus();
     }
 }
 
 /** Oculta el overlay de la UI. */
 function hideOverlay() {
     overlay.classList.add('hidden');
+}
+
+/** Alterna entre pausado y reanudado. Si está pausado, lo reanuda; si está en juego, lo pausa. */
+function togglePause() {
+    if (gameStarted && !youLose && !congratulations) {
+        gamePaused = !gamePaused;
+        if (gamePaused) {
+            showOverlay('pause');
+        } else {
+            hideOverlay();
+        }
+    }
 }
 
 /**
@@ -271,10 +345,19 @@ function checkCollisions(shot) {
 
 /**
  * Manejador del evento keydown. Marca como presionada la tecla en keyPressed.
+ * También maneja la tecla ESC para pausar/reanudar el juego.
  * @param {KeyboardEvent} e - El evento de teclado.
  */
 function keyDown(e) {
     var key = (window.event ? e.keyCode : e.which);
+    
+    // Tecla ESC para pausar
+    if (key === keyMap.pause) {
+        e.preventDefault();
+        togglePause();
+        return;
+    }
+    
     for (var inkey in keyMap) {
         if (key === keyMap[inkey]) {
             e.preventDefault();
@@ -321,12 +404,18 @@ function draw() {
 /**
  * Actualiza el estado del juego en cada frame: dibuja fondo, entidades,
  * procesa colisiones, movimiento del jugador y muestra HUD.
- * Retorna temprano si el juego no ha comenzado, está en victoria o en derrota.
+ * Retorna temprano si el juego no ha comenzado, está en pausa, está en victoria o en derrota.
  */
 function update() {
     drawBackground();
 
     if (!gameStarted) {
+        return;
+    }
+    if (gamePaused) {
+        bufferctx.drawImage(player, player.posX, player.posY);
+        bufferctx.drawImage(evil.image, evil.posX, evil.posY);
+        showLifeAndScore();
         return;
     }
     if (congratulations) {
