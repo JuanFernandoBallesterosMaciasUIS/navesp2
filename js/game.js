@@ -61,10 +61,11 @@ var playerShotDelay = CONFIG.PLAYER_SHOT_DELAY;
 var now             = 0;
 var playerName      = '';
 
-var overlay, startContent, endContent, pauseContent, mainMenuContent, tutorialContent, optionsContent;
+var overlay, startContent, endContent, pauseContent, mainMenuContent, tutorialContent, optionsContent, gameOverContent, victoryContent;
 var nameInput, startButton, restartButton, resumeButton, exitButton, finalText;
 var playButton, backButton, tutorialButton, optionsButton, quitButton;
 var backFromTutorialButton, backFromOptionsButton;
+var gameOverRestartButton, gameOverMenuButton, victoryRestartButton, victoryMenuButton;
 var finalAnimationTick = 0;
 var gameStarted = false;
 var gamePaused = false;
@@ -115,6 +116,8 @@ function init() {
     mainMenuContent = document.getElementById('mainMenuContent');
     tutorialContent = document.getElementById('tutorialContent');
     optionsContent  = document.getElementById('optionsContent');
+    gameOverContent = document.getElementById('gameOverContent');
+    victoryContent = document.getElementById('victoryContent');
     nameInput     = document.getElementById('playerName');
     startButton   = document.getElementById('startButton');
     restartButton = document.getElementById('restartButton');
@@ -128,6 +131,10 @@ function init() {
     quitButton    = document.getElementById('quitButton');
     backFromTutorialButton = document.getElementById('backFromTutorialButton');
     backFromOptionsButton = document.getElementById('backFromOptionsButton');
+    gameOverRestartButton = document.getElementById('gameOverRestartButton');
+    gameOverMenuButton = document.getElementById('gameOverMenuButton');
+    victoryRestartButton = document.getElementById('victoryRestartButton');
+    victoryMenuButton = document.getElementById('victoryMenuButton');
 
     addListener(document, 'keydown', keyDown);
     addListener(document, 'keyup', keyUp);
@@ -161,6 +168,22 @@ function init() {
     addListener(backFromOptionsButton, 'click', function() {
         showOverlay('mainMenu');
     });
+    addListener(gameOverRestartButton, 'click', function() {
+        resetGameState();
+        startGame();
+    });
+    addListener(gameOverMenuButton, 'click', function() {
+        resetGameState();
+        showOverlay('mainMenu');
+    });
+    addListener(victoryRestartButton, 'click', function() {
+        resetGameState();
+        startGame();
+    });
+    addListener(victoryMenuButton, 'click', function() {
+        resetGameState();
+        showOverlay('mainMenu');
+    });
     addListener(nameInput, 'keydown', function (e) {
         var key = (window.event ? e.keyCode : e.which);
         if (key === 13) {
@@ -192,6 +215,8 @@ function showOverlay(type) {
     pauseContent.classList.add('hidden');
     tutorialContent.classList.add('hidden');
     optionsContent.classList.add('hidden');
+    gameOverContent.classList.add('hidden');
+    victoryContent.classList.add('hidden');
     
     if (type === 'mainMenu') {
         mainMenuContent.classList.remove('hidden');
@@ -210,6 +235,25 @@ function showOverlay(type) {
     } else if (type === 'pause') {
         pauseContent.classList.remove('hidden');
         resumeButton.focus();
+    } else if (type === 'gameOver') {
+        gameOverContent.classList.remove('hidden');
+        document.getElementById('gameOverScore').textContent = player.score;
+    } else if (type === 'victory') {
+        victoryContent.classList.remove('hidden');
+        document.getElementById('victoryPlayerName').textContent = playerName;
+        document.getElementById('victoryScore').textContent = player.score;
+        
+        // Mostrar corazones
+        var hearts = '';
+        for (var i = 0; i < player.life; i++) {
+            hearts += '❤️ ';
+        }
+        document.getElementById('victoryHearts').textContent = hearts || '(ninguna)';
+        
+        // Bonus y total
+        var bonus = player.life * CONFIG.SCORE_LIFE_BONUS;
+        document.getElementById('victoryBonus').textContent = '+' + bonus;
+        document.getElementById('victoryTotal').textContent = getTotalScore();
     }
 }
 
@@ -290,9 +334,9 @@ function startVictorySequence() {
     setTimeout(showVictoryOverlay, CONFIG.CONGRATS_OVERLAY_DELAY);
 }
 
-/** Muestra el overlay de fin de partida y detiene la animación de victoria. */
+/** Muestra el overlay de victoria. */
 function showVictoryOverlay() {
-    showOverlay('end');
+    showOverlay('victory');
     congratulations = false;
 }
 
@@ -415,6 +459,7 @@ function update() {
     if (gamePaused) {
         bufferctx.drawImage(player, player.posX, player.posY);
         bufferctx.drawImage(evil.image, evil.posX, evil.posY);
+        drawEnemyLifeBar();
         showLifeAndScore();
         return;
     }
@@ -429,6 +474,7 @@ function update() {
 
     bufferctx.drawImage(player, player.posX, player.posY);
     bufferctx.drawImage(evil.image, evil.posX, evil.posY);
+    drawEnemyLifeBar();
 
     updateEvil();
 
@@ -451,6 +497,37 @@ function update() {
 /******************************* RENDERIZADO *******************************/
 
 /** Dibuja el marcador de vidas y puntos en la esquina superior derecha del buffer. */
+/** Dibuja la barra de vida encima del enemigo. */
+function drawEnemyLifeBar() {
+    if (evil.dead) {
+        return;
+    }
+    
+    var barWidth = 60;  // Ancho de la barra
+    var barHeight = 8;  // Alto de la barra
+    var barX = evil.posX + (evil.image.width - barWidth) / 2;  // Centrar horizontalmente
+    var barY = evil.posY - 15;  // Posición arriba del enemigo
+    
+    // Calcular el porcentaje de vida
+    var lifePercent = evil.life / evil.maxLife;
+    var filledWidth = barWidth * lifePercent;
+    
+    // Dibujar fondo de la barra (rojo/gris)
+    bufferctx.fillStyle = '#333333';
+    bufferctx.fillRect(barX, barY, barWidth, barHeight);
+    
+    // Dibujar barra de vida (rojo a verde según se van eliminando)
+    // Rojo cuando tiene toda la vida, verde cuando está casi muerto
+    var hue = lifePercent * 120;  // 0 grados (rojo) a 120 grados (verde)
+    bufferctx.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+    bufferctx.fillRect(barX, barY, filledWidth, barHeight);
+    
+    // Dibujar borde de la barra
+    bufferctx.strokeStyle = '#FFFFFF';
+    bufferctx.lineWidth = 1;
+    bufferctx.strokeRect(barX, barY, barWidth, barHeight);
+}
+
 function showLifeAndScore() {
     bufferctx.fillStyle = 'rgb(59,59,59)';
     bufferctx.font = 'bold 16px Arial';
@@ -466,41 +543,16 @@ function showLifeAndScore() {
     bufferctx.fillText(hearts, canvas.width - 100, 45);
 }
 
-/** Dibuja el texto "GAME OVER" centrado en el buffer durante el estado de derrota. */
+/** Muestra la pantalla de derrota mediante el overlay. */
 function showGameOver() {
-    bufferctx.fillStyle = 'rgb(255,0,0)';
-    bufferctx.font = 'bold 35px Arial';
-    bufferctx.fillText('GAME OVER', canvas.width / 2 - 100, canvas.height / 2);
+    showOverlay('gameOver');
 }
 
 /**
- * Dibuja la animación de victoria en el buffer: texto pulsante con puntuación final
- * y esferas animadas. Llamada en cada frame mientras congratulations === true.
+ * Muestra la pantalla de victoria mediante el overlay.
  */
 function showCongratulations() {
-    finalAnimationTick++;
-    var pulseColor = (finalAnimationTick % 30 < 15) ? 'rgb(255,255,0)' : 'rgb(255,255,255)';
-    bufferctx.fillStyle = pulseColor;
-    bufferctx.font = 'bold 24px Arial';
-    bufferctx.fillText('¡ENHORABUENA, ' + playerName + '!', canvas.width / 2 - 210, canvas.height / 2 - 40);
-    bufferctx.font = 'bold 22px Arial';
-    bufferctx.fillText('PUNTOS: ' + player.score,      canvas.width / 2 - 210, canvas.height / 2);
-    
-    // Mostrar vidas restantes como corazones rojos
-    bufferctx.fillStyle = '#FF0000';
-    var hearts = '';
-    for (var i = 0; i < player.life; i++) {
-        hearts += '\u2665 ';
-    }
-    bufferctx.fillText('VIDAS: ' + hearts + ' x ' + CONFIG.SCORE_LIFE_BONUS, canvas.width / 2 - 210, canvas.height / 2 + 35);
-    
-    bufferctx.fillStyle = pulseColor;
-    bufferctx.fillText('TOTAL: ' + getTotalScore(),    canvas.width / 2 - 210, canvas.height / 2 + 70);
-    for (var i = 0; i < 6; i++) {
-        bufferctx.beginPath();
-        bufferctx.arc(80 + i * 90, 120 + ((finalAnimationTick * (i + 1)) % 40), 6, 0, Math.PI * 2);
-        bufferctx.fill();
-    }
+    showOverlay('victory');
 }
 
 /**
