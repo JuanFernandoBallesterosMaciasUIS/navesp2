@@ -32,6 +32,7 @@ var playerSpeed   = CONFIG.PLAYER_SPEED;
 var evilCounter   = 0;
 var youLose       = false;
 var congratulations = false;
+var currentLevel  = 1;  // Variable para el nivel actual
 
 var minHorizontalOffset = CONFIG.EVIL_MIN_HORIZONTAL_OFFSET;
 var maxHorizontalOffset = CONFIG.EVIL_MAX_HORIZONTAL_OFFSET;
@@ -69,6 +70,7 @@ var gameOverRestartButton, gameOverMenuButton, victoryRestartButton, victoryMenu
 var finalAnimationTick = 0;
 var gameStarted = false;
 var gamePaused = false;
+var levelTransitionActive = false;  // Variable para controlar la transición de nivel
 
 /******************************* CARGA DE IMÁGENES *******************************/
 
@@ -203,7 +205,7 @@ function init() {
 
 /**
  * Muestra el overlay con el contenido especificado.
- * @param {'mainMenu'|'nameInput'|'tutorial'|'options'|'end'|'pause'} type - El tipo de overlay a mostrar.
+ * @param {'mainMenu'|'nameInput'|'tutorial'|'options'|'end'|'pause'|'levelTransition'} type - El tipo de overlay a mostrar.
  */
 function showOverlay(type) {
     overlay.classList.remove('hidden');
@@ -235,6 +237,10 @@ function showOverlay(type) {
     } else if (type === 'pause') {
         pauseContent.classList.remove('hidden');
         resumeButton.focus();
+    } else if (type === 'levelTransition') {
+        // Mostrar transición de nivel (usa finalText)
+        overlay.classList.add('hidden');
+        // La transición se muestra directamente en canvas
     } else if (type === 'gameOver') {
         gameOverContent.classList.remove('hidden');
         document.getElementById('gameOverScore').textContent = player.score;
@@ -290,8 +296,8 @@ function startGame() {
  * Crea un nuevo jugador y el primer enemigo.
  */
 function resetGameState() {
+    currentLevel  = 1;
     playerLife    = CONFIG.PLAYER_LIVES;
-    totalEvils    = CONFIG.EVIL_TOTAL;
     evilCounter   = 1;
     youLose       = false;
     congratulations = false;
@@ -300,9 +306,31 @@ function resetGameState() {
     now            = 0;
     nextPlayerShot = 0;
     finalAnimationTick = 0;
+    applyLevelConfiguration(currentLevel);
     player = new Player(playerLife, 0);
     createNewEvil();
     showLifeAndScore();
+}
+
+/**
+ * Aplica la configuración del nivel especificado.
+ * Actualiza velocidad, número de enemigos, vida y disparos base.
+ * @param {number} levelNumber - Número del nivel (1, 2, 3, 4).
+ */
+function applyLevelConfiguration(levelNumber) {
+    if (CONFIG.LEVELS[levelNumber]) {
+        var levelConfig = CONFIG.LEVELS[levelNumber];
+        evilSpeed = CONFIG.EVIL_BASE_SPEED * levelConfig.speedMultiplier;
+        totalEvils = levelConfig.totalEnemies;
+        evilLife = levelConfig.baseLife;
+        evilShots = levelConfig.baseShots;
+        
+        // Configurar estadísticas del jefe final para el nivel 4
+        if (levelNumber === 4) {
+            finalBossLife = CONFIG.BOSS_LIFE + 8;  // Jefe más fuerte en nivel 4
+            finalBossShots = CONFIG.BOSS_SHOTS + 15;
+        }
+    }
 }
 
 /******************************* GESTIÓN DE ENEMIGOS *******************************/
@@ -310,13 +338,19 @@ function resetGameState() {
 /**
  * Decide qué ocurre tras matar a un enemigo:
  * - Si quedan enemigos, programa la creación del siguiente con un retardo aleatorio.
- * - Si no quedan, inicia la secuencia de victoria (animación + overlay final).
+ * - Si no quedan, verifica si hay más niveles o inicia la secuencia de victoria.
  */
 function verifyToCreateNewEvil() {
     if (totalEvils > 0) {
         setTimeout(spawnNextEvil, getRandomNumber(CONFIG.NEW_EVIL_MAX_DELAY));
     } else {
-        setTimeout(startVictorySequence, CONFIG.CONGRATS_DELAY);
+        // Verificar si hay siguiente nivel
+        if (currentLevel < 4) {
+            setTimeout(startNextLevel, CONFIG.LEVEL_TRANSITION_DELAY);
+        } else {
+            // Fin del juego (último nivel completado)
+            setTimeout(startVictorySequence, CONFIG.CONGRATS_DELAY);
+        }
     }
 }
 
@@ -324,6 +358,31 @@ function verifyToCreateNewEvil() {
 function spawnNextEvil() {
     createNewEvil();
     evilCounter++;
+}
+
+/**
+ * Inicia el siguiente nivel: incrementa currentLevel, aplica su configuración,
+ * reinicia contadores y crea el primer enemigo del nuevo nivel.
+ */
+function startNextLevel() {
+    currentLevel++;
+    evilCounter = 1;
+    playerShotsBuffer = [];
+    evilShotsBuffer = [];
+    applyLevelConfiguration(currentLevel);
+    // Mostrar notificación del nivel
+    showLevelTransition();
+    createNewEvil();
+}
+
+/**
+ * Muestra una notificación visual de cambio de nivel.
+ */
+function showLevelTransition() {
+    levelTransitionActive = true;
+    setTimeout(function() {
+        levelTransitionActive = false;
+    }, CONFIG.LEVEL_TRANSITION_DELAY);
 }
 
 /** Guarda la puntuación, activa la animación de victoria y programa el overlay final. */
@@ -342,14 +401,16 @@ function showVictoryOverlay() {
 
 /**
  * Crea el siguiente enemigo y lo asigna a la variable `evil`.
- * Crea un FinalBoss cuando totalEvils === 1; en caso contrario, crea un Evil
+ * Crea un FinalBoss en el nivel 4; en caso contrario, crea un Evil
  * con vidas y disparos incrementados según evilCounter.
  */
 function createNewEvil() {
-    if (totalEvils !== 1) {
-        evil = new Evil(evilLife + evilCounter - 1, evilShots + evilCounter - 1);
-    } else {
+    if (currentLevel === 4) {
+        // Nivel 4: JEFE FINAL
         evil = new FinalBoss();
+    } else {
+        // Niveles 1-3: Enemigos regulares
+        evil = new Evil(evilLife + evilCounter - 1, evilShots + evilCounter - 1);
     }
 }
 
@@ -456,6 +517,16 @@ function update() {
     if (!gameStarted) {
         return;
     }
+    if (levelTransitionActive) {
+        // Durante la transición de nivel, mostrar el mensaje
+        bufferctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        bufferctx.fillRect(0, 0, canvas.width, canvas.height);
+        bufferctx.fillStyle = '#FFD700';
+        bufferctx.font = 'bold 32px Arial';
+        var levelConfig = CONFIG.LEVELS[currentLevel];
+        bufferctx.fillText(levelConfig.name, canvas.width/2 - 150, canvas.height/2);
+        return;
+    }
     if (gamePaused) {
         bufferctx.drawImage(player, player.posX, player.posY);
         bufferctx.drawImage(evil.image, evil.posX, evil.posY);
@@ -529,9 +600,20 @@ function drawEnemyLifeBar() {
 }
 
 function showLifeAndScore() {
-    bufferctx.fillStyle = 'rgb(59,59,59)';
+    bufferctx.fillStyle = '#90EE90';
     bufferctx.font = 'bold 16px Arial';
     bufferctx.fillText('Puntos: ' + player.score, canvas.width - 100, 20);
+    
+    // Mostrar nivel
+    bufferctx.fillStyle = '#FFD700';
+    bufferctx.font = 'bold 14px Arial';
+    bufferctx.fillText('Nivel ' + currentLevel, 10, 20);
+    
+    // Mostrar enemigos restantes
+    bufferctx.fillStyle = '#87CEEB';
+    bufferctx.font = 'bold 12px Arial';
+    var enemyText = 'Enemigos: ' + totalEvils + (currentLevel === 4 ? ' (JEFE)' : '');
+    bufferctx.fillText(enemyText, 10, 40);
     
     // Dibujar corazones rojos en lugar de número de vidas
     bufferctx.fillStyle = '#FF0000';

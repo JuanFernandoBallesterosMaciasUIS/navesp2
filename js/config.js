@@ -39,5 +39,38 @@ var CONFIG = {
     EVIL_FIRST_SHOT_EXTRA: 2500,  // ms aleatorios extra para el primer disparo
     EVIL_SHOT_INTERVAL: 3000,     // ms máximos entre disparos sucesivos del enemigo
     CONGRATS_DELAY: 2000,         // ms de animación antes de mostrar overlay de victoria
-    CONGRATS_OVERLAY_DELAY: 2000  // ms de espera dentro del overlay de victoria
+    CONGRATS_OVERLAY_DELAY: 2000, // ms de espera dentro del overlay de victoria
+    // Configuración de niveles
+    LEVELS: {
+        1: {
+            name: 'NIVEL 1',
+            speedMultiplier: 0.7,
+            totalEnemies: 6,
+            baseLife: 3,
+            baseShots: 4
+        },
+        2: {
+            name: 'NIVEL 2',
+            speedMultiplier: 1,
+            totalEnemies: 9,
+            baseLife: 4,
+            baseShots: 5
+        },
+        3: {
+            name: 'NIVEL 3',
+            speedMultiplier: 1.1,
+            totalEnemies: 12,
+            baseLife: 5,
+            baseShots: 6
+        },
+        4: {
+            name: 'JEFE FINAL',
+            speedMultiplier: 1.3,
+            totalEnemies: 1,
+            baseLife: 6,
+            baseShots: 7,
+            isBossLevel: true
+        }
+    },
+    LEVEL_TRANSITION_DELAY: 3000  // ms antes de mostrar el siguiente nivel
 };
