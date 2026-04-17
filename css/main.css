@@ -348,6 +348,42 @@ div.overlay-content input:focus {
     box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
 }
 
+/* ===== BOTÓN DE SONIDO ===== */
+.sound-toggle-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(76, 175, 80, 0.9);
+    border: 2px solid #81c784;
+    cursor: pointer;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    padding: 0;
+}
+
+.sound-toggle-btn:hover {
+    background: rgba(76, 175, 80, 1);
+    box-shadow: 0 6px 25px rgba(76, 175, 80, 0.6);
+    transform: scale(1.1);
+}
+
+.sound-toggle-btn:active {
+    transform: scale(0.95);
+}
+
+.sound-icon {
+    width: 30px;
+    height: 30px;
+    display: block;
+}
+
 /* ===== CONTENIDO DE FIN DE JUEGO ===== */
 #endContent p {
     font-size: 18px;
