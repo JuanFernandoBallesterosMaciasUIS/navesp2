@@ -50,6 +50,7 @@ var evilImages  = { animation: [], killed: null };
 var bossImages  = { animation: [], killed: null };
 
 var backgroundAudio = null;  // Variable para el sonido de fondo
+var backgroundAudioPaused = false;  // Variable para rastrear si el sonido está pausado
 
 var keyPressed = {};
 var keyMap = {
@@ -69,6 +70,7 @@ var nameInput, startButton, restartButton, resumeButton, exitButton, finalText;
 var playButton, backButton, tutorialButton, optionsButton, quitButton;
 var backFromTutorialButton, backFromOptionsButton;
 var gameOverRestartButton, gameOverMenuButton, victoryRestartButton, victoryMenuButton;
+var soundToggleBtn;  // Botón de control de sonido
 var finalAnimationTick = 0;
 var gameStarted = false;
 var gamePaused = false;
@@ -106,15 +108,35 @@ function initBackgroundAudio() {
         backgroundAudio.volume = 0.5;  // Volumen al 50%
     }
     backgroundAudio.play();
+    backgroundAudioPaused = false;
 }
 
 /**
- * Detiene el sonido de fondo.
+ * Alterna entre pausar y continuar el sonido de fondo.
+ */
+function toggleBackgroundAudio() {
+    if (backgroundAudio) {
+        if (backgroundAudioPaused) {
+            backgroundAudio.play();
+            backgroundAudioPaused = false;
+            soundToggleBtn.style.opacity = '1';
+        } else {
+            backgroundAudio.pause();
+            backgroundAudioPaused = true;
+            soundToggleBtn.style.opacity = '0.5';
+        }
+    }
+}
+
+/**
+ * Detiene el sonido de fondo completamente (para cuando termina el juego).
  */
 function stopBackgroundAudio() {
     if (backgroundAudio) {
         backgroundAudio.pause();
         backgroundAudio.currentTime = 0;
+        backgroundAudioPaused = false;
+        soundToggleBtn.style.opacity = '1';
     }
 }
 
@@ -163,6 +185,7 @@ function init() {
     gameOverMenuButton = document.getElementById('gameOverMenuButton');
     victoryRestartButton = document.getElementById('victoryRestartButton');
     victoryMenuButton = document.getElementById('victoryMenuButton');
+    soundToggleBtn = document.getElementById('soundToggleBtn');
 
     addListener(document, 'keydown', keyDown);
     addListener(document, 'keyup', keyUp);
@@ -212,6 +235,7 @@ function init() {
         resetGameState();
         showOverlay('mainMenu');
     });
+    addListener(soundToggleBtn, 'click', toggleBackgroundAudio);
     addListener(nameInput, 'keydown', function (e) {
         var key = (window.event ? e.keyCode : e.which);
         if (key === 13) {
