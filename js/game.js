@@ -196,11 +196,15 @@ function init() {
 
     showOverlay('mainMenu');
 
-    function anim() {
-        loop();
+    var lastTime = 0;
+    function anim(timestamp) {
+        if (!lastTime) lastTime = timestamp;
+        var dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+        lastTime = timestamp;
+        loop(dt);
         requestAnimFrame(anim);
     }
-    anim();
+    anim(0);
 }
 
 /**
@@ -486,8 +490,8 @@ function keyUp(e) {
 }
 
 /** Delega el procesamiento de entrada del jugador a player.doAnything(). */
-function playerAction() {
-    player.doAnything();
+function playerAction(dt) {
+    player.doAnything(dt);
 }
 
 /******************************* GAME LOOP *******************************/
@@ -496,8 +500,8 @@ function playerAction() {
  * Ejecuta un frame del juego: actualiza el estado y dibuja en pantalla.
  * Es llamada en cada pulso de requestAnimFrame (~60 fps).
  */
-function loop() {
-    update();
+function loop(dt) {
+    update(dt);
     draw();
 }
 
@@ -511,7 +515,7 @@ function draw() {
  * procesa colisiones, movimiento del jugador y muestra HUD.
  * Retorna temprano si el juego no ha comenzado, está en pausa, está en victoria o en derrota.
  */
-function update() {
+function update(dt) {
     drawBackground();
 
     if (!gameStarted) {
@@ -547,22 +551,22 @@ function update() {
     bufferctx.drawImage(evil.image, evil.posX, evil.posY);
     drawEnemyLifeBar();
 
-    updateEvil();
+    updateEvil(dt);
 
     for (var j = 0; j < playerShotsBuffer.length; j++) {
-        updatePlayerShot(playerShotsBuffer[j], j);
+        updatePlayerShot(playerShotsBuffer[j], j, dt);
     }
 
     if (isEvilHittingPlayer()) {
         player.killPlayer();
     } else {
         for (var i = 0; i < evilShotsBuffer.length; i++) {
-            updateEvilShot(evilShotsBuffer[i], i);
+            updateEvilShot(evilShotsBuffer[i], i, dt);
         }
     }
 
     showLifeAndScore();
-    playerAction();
+    playerAction(dt);
 }
 
 /******************************* RENDERIZADO *******************************/
@@ -649,9 +653,9 @@ function drawBackground() {
  * Actualiza la posición y animación del enemigo activo.
  * Si sale de pantalla, lo elimina (llama evil.kill()).
  */
-function updateEvil() {
+function updateEvil(dt) {
     if (!evil.dead) {
-        evil.update();
+        evil.update(dt);
         if (evil.isOutOfScreen()) {
             evil.kill();
         }
@@ -664,12 +668,12 @@ function updateEvil() {
  * @param {PlayerShot} shot - El proyectil a actualizar.
  * @param {number} id - Índice del proyectil en playerShotsBuffer.
  */
-function updatePlayerShot(shot, id) {
+function updatePlayerShot(shot, id, dt) {
     if (shot) {
         shot.identifier = id;
         if (checkCollisions(shot)) {
             if (shot.posY > 0) {
-                shot.posY -= shot.speed;
+                shot.posY -= shot.speed * dt * 60;
                 bufferctx.drawImage(shot.image, shot.posX, shot.posY);
             } else {
                 shot.deleteShot(parseInt(shot.identifier));
@@ -684,12 +688,12 @@ function updatePlayerShot(shot, id) {
  * @param {EvilShot} shot - El proyectil a actualizar.
  * @param {number} id - Índice del proyectil en evilShotsBuffer.
  */
-function updateEvilShot(shot, id) {
+function updateEvilShot(shot, id, dt) {
     if (shot) {
         shot.identifier = id;
         if (!shot.isHittingPlayer()) {
             if (shot.posY <= canvas.height) {
-                shot.posY += shot.speed;
+                shot.posY += shot.speed * dt * 60;
                 bufferctx.drawImage(shot.image, shot.posX, shot.posY);
             } else {
                 shot.deleteShot(parseInt(shot.identifier));

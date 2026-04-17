@@ -114,24 +114,24 @@ function Enemy(life, shots, enemyImages) {
         verifyToCreateNewEvil();
     };
 
-    this.update = function () {
-        this.posY += this.goDownSpeed;
+    this.update = function (dt) {
+        this.posY += this.goDownSpeed * dt * 60;
         if (this.direction === 'D') {
             if (this.posX <= this.maxX) {
-                this.posX += this.speed;
+                this.posX += this.speed * dt * 60;
             } else {
                 this.direction = 'I';
-                this.posX -= this.speed;
+                this.posX -= this.speed * dt * 60;
             }
         } else {
             if (this.posX >= this.minX) {
-                this.posX -= this.speed;
+                this.posX -= this.speed * dt * 60;
             } else {
                 this.direction = 'D';
-                this.posX += this.speed;
+                this.posX += this.speed * dt * 60;
             }
         }
-        this.animation++;
+        this.animation += dt * 60;
         if (this.animation > CONFIG.EVIL_ANIMATION_INTERVAL) {
             this.animation = 0;
             this.imageNumber++;
@@ -227,15 +227,15 @@ function Player(life, score) {
         }
     };
 
-    player.doAnything = function() {
+    player.doAnything = function(dt) {
         if (player.dead) {
             return;
         }
         if (keyPressed.left && player.posX > CONFIG.PLAYER_BOUNDARY_PADDING) {
-            player.posX -= player.speed;
+            player.posX -= player.speed * dt * 60;
         }
         if (keyPressed.right && player.posX < (canvas.width - player.width - CONFIG.PLAYER_BOUNDARY_PADDING)) {
-            player.posX += player.speed;
+            player.posX += player.speed * dt * 60;
         }
         if (keyPressed.fire) {
             shoot();
