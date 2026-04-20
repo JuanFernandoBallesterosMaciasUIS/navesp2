@@ -259,7 +259,7 @@ function init() {
         alert('¡Gracias por jugar!');
     });
     addListener(backFromTutorialButton, 'click', function() {
-        showOverlay('start');
+        showOverlay('nameInput');
     });
     addListener(backFromOptionsButton, 'click', function() {
         showOverlay('mainMenu');
