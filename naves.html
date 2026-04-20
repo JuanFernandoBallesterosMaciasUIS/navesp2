@@ -105,13 +105,18 @@
                     <div id="optionsContent" class="hidden">
                         <h2>OPCIONES</h2>
                         <p style="color: #81c784;">Configuración del juego</p>
-                        <p style="margin: 20px 0; padding: 15px; background: rgba(76, 175, 80, 0.1); border-left: 3px solid #4caf50;">
-                             Sonido y música (próximas versiones)<br>
-                             Temas visuales (próximas versiones)<br>
-                             Personalizar controles (próximas versiones)
-                        </p>
+
+                        <div class="melody-selector">
+                            <p class="melody-selector-title">🎵 MELODÍA DE FONDO</p>
+                            <div class="melody-btns-row">
+                                <button class="melody-btn melody-btn-active" data-src="Sonidos/Melodia_1.mp3" onclick="changeTrack('Sonidos/Melodia_1.mp3')">🔷 Melodía 1</button>
+                                <button class="melody-btn" data-src="Sonidos/Melodia_2.mp3" onclick="changeTrack('Sonidos/Melodia_2.mp3')">🔶 Melodía 2</button>
+                                <button class="melody-btn" data-src="Sonidos/Melodia_3.mp3" onclick="changeTrack('Sonidos/Melodia_3.mp3')">🔹 Melodía 3</button>
+                            </div>
+                        </div>
+
                         <button id="especificacionesButton" class="btn btn-secondary" style="margin-bottom: 10px;">
-                            <span class="btn-icon"></span> ESPECIFICACIONES DEL JUEGO
+                            <span class="btn-icon">ℹ️</span> ESPECIFICACIONES DEL JUEGO
                         </button>
                         <button id="backFromOptionsButton" class="btn btn-secondary">
                             <span class="btn-icon">◀</span> ATRÁS
