@@ -21,7 +21,7 @@ var ACHIEVEMENTS_DEF = [
         id:   'first_kill',
         icon:  '🎯',
         title: 'Primera Sangre',
-        desc:  'Elimina tu primer enemigo'
+        desc:  'Elimina tu primer enemigo con las 3 vidas intactas'
     },
     {
         id:   'kill_10',
@@ -73,9 +73,9 @@ var ACHIEVEMENTS_DEF = [
     },
     {
         id:   'resilient',
-        icon:  '💪',
-        title: 'Resiliente',
-        desc:  'Sigue luchando con solo 1 vida restante'
+        icon:  '�',
+        title: 'Al Límite',
+        desc:  'Termina el juego completo con solo 1 vida restante'
     }
 ];
 
@@ -135,7 +135,7 @@ function showAchievementToast(achiev) {
     document.getElementById('achievToastTitle').textContent = achiev.title;
     document.getElementById('achievToastDesc').textContent  = achiev.desc;
 
-    // Limpiar timer anterior si estaba activo
+    // Si ya está visible mostrando otro logro, cancelar y reemplazar
     if (toastTimer) {
         clearTimeout(toastTimer);
         toastTimer = null;
@@ -152,7 +152,7 @@ function showAchievementToast(achiev) {
             toast.classList.remove('achiev-toast-out');
             toastTimer = null;
         }, 500);
-    }, 3200);
+    }, 3500);
 }
 
 /******************************* COMPROBACIONES *******************************/
@@ -164,7 +164,11 @@ function resetSessionStats() {
 
 function onEnemyKilled() {
     sessionKills++;
-    unlockAchievement('first_kill');
+    // first_kill: primer enemigo eliminado con las 3 vidas intactas
+    if (sessionKills === 1 && !sessionDamaged &&
+        typeof player !== 'undefined' && player && player.life === CONFIG.PLAYER_LIVES) {
+        unlockAchievement('first_kill');
+    }
     if (sessionKills >= 10) {
         unlockAchievement('kill_10');
     }
@@ -176,10 +180,6 @@ function onEnemyKilled() {
 
 function onPlayerDamaged() {
     sessionDamaged = true;
-    // Resiliente: sigue jugando con 1 vida
-    if (typeof player !== 'undefined' && player && player.life === 1) {
-        unlockAchievement('resilient');
-    }
 }
 
 function onLevelChanged(newLevel, livesAtChange) {
@@ -205,6 +205,10 @@ function onVictory(livesRemaining) {
     unlockAchievement('beat_boss');
     if (livesRemaining === CONFIG.PLAYER_LIVES) {
         unlockAchievement('perfect');
+    }
+    // Al Límite: termina el juego con exactamente 1 vida
+    if (livesRemaining === 1) {
+        unlockAchievement('resilient');
     }
 }
 

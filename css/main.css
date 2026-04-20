@@ -242,14 +242,15 @@ div.juego canvas {
     display: flex;
     align-items: center;
     gap: 12px;
-    background: linear-gradient(135deg, #1a2e1a 0%, #2d4a2d 100%);
-    border: 2px solid #4caf50;
+    background: linear-gradient(135deg, rgba(26, 46, 26, 0.30) 0%, rgba(45, 74, 45, 0.30) 100%);
+    border: 1px solid rgba(76, 175, 80, 0.35);
     border-radius: 12px;
     padding: 12px 20px;
-    box-shadow: 0 4px 24px rgba(76, 175, 80, 0.5);
+    box-shadow: 0 4px 14px rgba(76, 175, 80, 0.15);
     min-width: 280px;
     max-width: 460px;
     pointer-events: none;
+    backdrop-filter: blur(3px);
 }
 
 .achiev-toast-icon {
@@ -295,6 +296,7 @@ div.juego canvas {
 
 .achiev-toast-in  { animation: achievSlideIn  0.4s ease forwards; }
 .achiev-toast-out { animation: achievSlideOut 0.5s ease forwards; }
+.achiev-toast.hidden { display: none; }
 
 #puntuaciones,
 #puntuacionesGameOver {
