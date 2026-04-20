@@ -68,6 +68,7 @@ var playerName      = '';
 var overlay, startContent, endContent, pauseContent, mainMenuContent, tutorialContent, optionsContent, gameOverContent, victoryContent;
 var especificacionesContent, mainMenuScoresPanel;
 var gameLeftPanel, gameScoresPanel, mainMenuLeftPanel;
+var logrosContent, logrosButton, backFromLogrosButton;
 var nameInput, startButton, restartButton, resumeButton, exitButton, finalText;
 var playButton, backButton, tutorialButton, optionsButton, quitButton, especificacionesButton;
 var backFromTutorialButton, backFromOptionsButton, backFromEspecificacionesButton;
@@ -194,6 +195,7 @@ function init() {
     tutorialContent = document.getElementById('tutorialContent');
     optionsContent  = document.getElementById('optionsContent');
     especificacionesContent = document.getElementById('especificacionesContent');
+    logrosContent       = document.getElementById('logrosContent');
     mainMenuScoresPanel = document.getElementById('mainMenuScoresPanel');
     gameLeftPanel   = document.getElementById('gameLeftPanel');
     gameScoresPanel = document.getElementById('gameScoresPanel');
@@ -217,6 +219,8 @@ function init() {
     backFromOptionsButton = document.getElementById('backFromOptionsButton');
     especificacionesButton = document.getElementById('especificacionesButton');
     backFromEspecificacionesButton = document.getElementById('backFromEspecificacionesButton');
+    logrosButton         = document.getElementById('logrosButton');
+    backFromLogrosButton = document.getElementById('backFromLogrosButton');
     gameOverRestartButton = document.getElementById('gameOverRestartButton');
     gameOverMenuButton = document.getElementById('gameOverMenuButton');
     victoryRestartButton = document.getElementById('victoryRestartButton');
@@ -255,12 +259,18 @@ function init() {
         alert('¡Gracias por jugar!');
     });
     addListener(backFromTutorialButton, 'click', function() {
-        showOverlay('mainMenu');
+        showOverlay('start');
     });
     addListener(backFromOptionsButton, 'click', function() {
         showOverlay('mainMenu');
     });
     addListener(backFromEspecificacionesButton, 'click', function() {
+        showOverlay('options');
+    });
+    addListener(logrosButton, 'click', function() {
+        showOverlay('logros');
+    });
+    addListener(backFromLogrosButton, 'click', function() {
         showOverlay('mainMenu');
     });
     addListener(gameOverRestartButton, 'click', function() {
@@ -290,6 +300,7 @@ function init() {
         }
     });
 
+    loadAchievements();
     showOverlay('mainMenu');
 
     var lastTime = 0;
@@ -319,6 +330,7 @@ function showOverlay(type) {
     tutorialContent.classList.add('hidden');
     optionsContent.classList.add('hidden');
     especificacionesContent.classList.add('hidden');
+    if (logrosContent) { logrosContent.classList.add('hidden'); }
     gameOverContent.classList.add('hidden');
     victoryContent.classList.add('hidden');
     
@@ -343,6 +355,11 @@ function showOverlay(type) {
         optionsContent.classList.remove('hidden');
     } else if (type === 'especificaciones') {
         especificacionesContent.classList.remove('hidden');
+    } else if (type === 'logros') {
+        if (logrosContent) {
+            logrosContent.classList.remove('hidden');
+            renderAchievementsMenu();
+        }
     } else if (type === 'end') {
         endContent.classList.remove('hidden');
     } else if (type === 'pause') {
@@ -429,6 +446,7 @@ function restartLevel() {
  */
 function startGame() {
     playerName = sanitizeName(nameInput.value);
+    resetSessionStats();
     resetGameState();
     hideOverlay();
     gameStarted = true;
@@ -512,11 +530,13 @@ function spawnNextEvil() {
  * reinicia contadores y crea el primer enemigo del nuevo nivel.
  */
 function startNextLevel() {
+    var livesBeforeTransition = player ? player.life : 0;
     currentLevel++;
     evilCounter = 1;
     playerShotsBuffer = [];
     evilShotsBuffer = [];
     applyLevelConfiguration(currentLevel);
+    onLevelChanged(currentLevel, livesBeforeTransition);
     // Mostrar notificación del nivel
     showLevelTransition();
     createNewEvil();
@@ -534,6 +554,7 @@ function showLevelTransition() {
 
 /** Guarda la puntuación, activa la animación de victoria y programa el overlay final. */
 function startVictorySequence() {
+    onVictory(player ? player.life : 0);
     saveFinalScore();
     congratulations = true;
     finalText.textContent = '¡ENHORABUENA, ' + playerName + '! Has ganado.';
@@ -587,6 +608,7 @@ function checkCollisions(shot) {
         } else {
             evil.kill();
             player.score += evil.pointsToKill;
+            onEnemyKilled();
         }
         shot.deleteShot(parseInt(shot.identifier));
         return false;
@@ -703,6 +725,7 @@ function update(dt) {
 
     if (isEvilHittingPlayer()) {
         player.killPlayer();
+        onPlayerDamaged();
     } else {
         for (var i = 0; i < evilShotsBuffer.length; i++) {
             updateEvilShot(evilShotsBuffer[i], i, dt);
@@ -748,11 +771,17 @@ function drawEnemyLifeBar() {
 }
 
 function showLifeAndScore() {
+    // Actualizar puntuación en el panel DOM
+    var scoreEl = document.getElementById('currentScoreDisplay');
+    if (scoreEl) { scoreEl.textContent = player.score; }
+
+    bufferctx.textAlign = 'right';
     bufferctx.fillStyle = '#90EE90';
     bufferctx.font = 'bold 16px Arial';
-    bufferctx.fillText('Puntos: ' + player.score, canvas.width - 100, 20);
+    bufferctx.fillText('Puntos: ' + player.score, canvas.width - 5, 20);
     
     // Mostrar nivel
+    bufferctx.textAlign = 'left';
     bufferctx.fillStyle = '#FFD700';
     bufferctx.font = 'bold 14px Arial';
     bufferctx.fillText('Nivel ' + currentLevel, 10, 20);
@@ -764,13 +793,15 @@ function showLifeAndScore() {
     bufferctx.fillText(enemyText, 10, 40);
     
     // Dibujar corazones rojos en lugar de número de vidas
+    bufferctx.textAlign = 'right';
     bufferctx.fillStyle = '#FF0000';
     bufferctx.font = 'bold 24px Arial';
     var hearts = '';
     for (var i = 0; i < player.life; i++) {
         hearts += '\u2665 ';
     }
-    bufferctx.fillText(hearts, canvas.width - 100, 45);
+    bufferctx.fillText(hearts, canvas.width - 5, 45);
+    bufferctx.textAlign = 'left';
 }
 
 /** Muestra la pantalla de derrota mediante el overlay. */
@@ -844,8 +875,7 @@ function updateEvilShot(shot, id, dt) {
                 shot.deleteShot(parseInt(shot.identifier));
             }
         } else {
-            player.killPlayer();
-        }
+            player.killPlayer();            onPlayerDamaged();        }
     }
 }
 

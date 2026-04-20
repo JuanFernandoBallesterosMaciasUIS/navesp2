@@ -59,6 +59,248 @@ div.juego canvas {
     text-transform: uppercase;
     font-weight: bold;
 }
+
+/* ===== ESPECIFICACIONES ===== */
+.specs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    text-align: left;
+    font-size: 12px;
+    color: #ddd;
+    max-height: 360px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.specs-section {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(76, 175, 80, 0.25);
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.specs-section-title {
+    color: #81c784;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 0 0 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.specs-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0;
+    line-height: 1.6;
+}
+
+.specs-key {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.specs-label {
+    color: #aaa;
+}
+
+.specs-val {
+    color: #ffeb3b;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.specs-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+.specs-table th {
+    color: #81c784;
+    font-weight: bold;
+    padding: 3px 4px;
+    border-bottom: 1px solid rgba(76, 175, 80, 0.3);
+    text-align: center;
+}
+
+.specs-table td {
+    padding: 3px 4px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.specs-boss-row td {
+    color: #ff8a65;
+    font-weight: bold;
+}
+
+/* Nivel 1 toma las 2 columnas (controles) */
+.specs-section:first-child {
+    grid-column: span 1;
+}
+
+/* La tabla de niveles ocupa las 2 columnas */
+.specs-section:nth-child(3) {
+    grid-column: span 2;
+}
+
+/* ===== ESPECIFICACIONES — bloques estilo OPCIONES ===== */
+.specs-block {
+    margin: 8px 0;
+    padding: 12px 16px;
+    background: rgba(76, 175, 80, 0.08);
+    border-left: 3px solid #4caf50;
+    border-radius: 0 6px 6px 0;
+    text-align: left;
+    font-size: 13px;
+    color: #ddd;
+    line-height: 1.8;
+}
+
+.specs-block-title {
+    color: #81c784;
+    font-weight: bold;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 0 0 6px;
+}
+
+/* ===== LOGROS — PANTALLA DE MENÚ ===== */
+.achiev-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 360px;
+    overflow-y: auto;
+    padding-right: 4px;
+    text-align: left;
+}
+
+.achiev-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid;
+}
+
+.achiev-unlocked {
+    background: rgba(76, 175, 80, 0.12);
+    border-color: rgba(76, 175, 80, 0.4);
+}
+
+.achiev-locked {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+    opacity: 0.65;
+}
+
+.achiev-item-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    width: 32px;
+    text-align: center;
+}
+
+.achiev-item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.achiev-item-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #fff;
+}
+
+.achiev-unlocked .achiev-item-title {
+    color: #81c784;
+}
+
+.achiev-item-desc {
+    font-size: 11px;
+    color: #aaa;
+}
+
+/* ===== LOGROS — TOAST EN PANTALLA ===== */
+.achiev-toast {
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, rgba(26, 46, 26, 0.30) 0%, rgba(45, 74, 45, 0.30) 100%);
+    border: 1px solid rgba(76, 175, 80, 0.35);
+    border-radius: 12px;
+    padding: 12px 20px;
+    box-shadow: 0 4px 14px rgba(76, 175, 80, 0.15);
+    min-width: 280px;
+    max-width: 460px;
+    pointer-events: none;
+    backdrop-filter: blur(3px);
+}
+
+.achiev-toast-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+}
+
+.achiev-toast-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+}
+
+.achiev-toast-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #81c784;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.achiev-toast-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+}
+
+.achiev-toast-desc {
+    font-size: 12px;
+    color: #ccc;
+}
+
+@keyframes achievSlideIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.9); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0)      scale(1);   }
+}
+
+@keyframes achievSlideOut {
+    from { opacity: 1; transform: translateX(-50%) translateY(0)       scale(1);   }
+    to   { opacity: 0; transform: translateX(-50%) translateY(-20px)   scale(0.9); }
+}
+
+.achiev-toast-in  { animation: achievSlideIn  0.4s ease forwards; }
+.achiev-toast-out { animation: achievSlideOut 0.5s ease forwards; }
+.achiev-toast.hidden { display: none; }
+
 #puntuaciones,
 #puntuacionesGameOver {
     width: 100%;
@@ -215,6 +457,31 @@ div.overlay-content {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+}
+
+.current-score-box {
+    text-align: center;
+    background: rgba(76, 175, 80, 0.15);
+    border: 1px solid rgba(76, 175, 80, 0.5);
+    border-radius: 8px;
+    padding: 12px 8px;
+    margin-bottom: 18px;
+}
+
+.current-score-label {
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #81c784;
+    margin: 0 0 6px 0;
+    text-transform: uppercase;
+}
+
+.current-score-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #ffeb3b;
+    margin: 0;
+    font-family: 'Courier New', monospace;
 }
 
 #puntuacionesGame {
