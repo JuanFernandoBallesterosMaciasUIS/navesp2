@@ -74,7 +74,7 @@ var nameInput, startButton, restartButton, resumeButton, exitButton, finalText;
 var playButton, backButton, tutorialButton, optionsButton, quitButton, especificacionesButton;
 var backFromTutorialButton, backFromOptionsButton, backFromEspecificacionesButton;
 var gameOverRestartButton, gameOverMenuButton, victoryRestartButton, victoryMenuButton;
-var soundToggleBtn;  // Botón de control de sonido
+var pauseButton, restartLevelBtn, soundToggleBtn;  // Botones de control
 var finalAnimationTick = 0;
 var gameStarted = false;
 var gamePaused = false;
@@ -262,6 +262,8 @@ function init() {
     gameOverMenuButton = document.getElementById('gameOverMenuButton');
     victoryRestartButton = document.getElementById('victoryRestartButton');
     victoryMenuButton = document.getElementById('victoryMenuButton');
+    pauseButton = document.getElementById('pauseButton');
+    restartLevelBtn = document.getElementById('restartLevelBtn');
     soundToggleBtn = document.getElementById('soundToggleBtn');
 
     addListener(document, 'keydown', keyDown);
@@ -294,7 +296,7 @@ function init() {
         alert('¡Gracias por jugar!');
     });
     addListener(backFromTutorialButton, 'click', function() {
-        showOverlay('start');
+        showOverlay('nameInput');
     });
     addListener(backFromOptionsButton, 'click', function() {
         showOverlay('mainMenu');
@@ -324,6 +326,8 @@ function init() {
         resetGameState();
         showOverlay('mainMenu');
     });
+    addListener(pauseButton, 'click', togglePause);
+    addListener(restartLevelBtn, 'click', restartLevel);
     addListener(soundToggleBtn, 'click', toggleBackgroundAudio);
     addListener(nameInput, 'keydown', function (e) {
         var key = (window.event ? e.keyCode : e.which);
@@ -373,6 +377,10 @@ function showOverlay(type) {
         gameStarted = false;
         gamePaused = false;
         stopBackgroundAudio();  // Detiene el sonido de fondo
+        updatePauseButtonLabel();
+        
+        // Ocultar botones de control
+        document.querySelector('.header-controls').classList.add('hidden');
     } else if (type === 'nameInput') {
         startContent.classList.remove('hidden');
         if (mainMenuScoresPanel) { mainMenuScoresPanel.classList.remove('hidden'); }
@@ -426,15 +434,47 @@ function hideOverlay() {
 }
 
 /** Alterna entre pausado y reanudado. Si está pausado, lo reanuda; si está en juego, lo pausa. */
+function updatePauseButtonLabel() {
+    if (pauseButton) {
+        pauseButton.innerHTML = gamePaused ? '<span class="control-icon">▶</span>' : '<span class="control-icon">❚❚</span>';
+        var label = gamePaused ? 'Reanudar juego' : 'Pausar juego';
+        pauseButton.title = label;
+        pauseButton.setAttribute('aria-label', label);
+    }
+}
+
 function togglePause() {
     if (gameStarted && !youLose && !congratulations) {
         gamePaused = !gamePaused;
+        updatePauseButtonLabel();
         if (gamePaused) {
             showOverlay('pause');
         } else {
             hideOverlay();
         }
     }
+}
+
+function restartLevel() {
+    if (!gameStarted || youLose || congratulations) {
+        return;
+    }
+
+    gamePaused = false;
+    hideOverlay();
+    playerShotsBuffer = [];
+    evilShotsBuffer = [];
+    now = 0;
+    nextPlayerShot = 0;
+    finalAnimationTick = 0;
+    var currentLife = player ? player.life : CONFIG.PLAYER_LIVES;
+    var currentScore = player ? player.score : 0;
+    applyLevelConfiguration(currentLevel);
+    evilCounter = 1;
+    player = new Player(currentLife, currentScore);
+    createNewEvil();
+    updatePauseButtonLabel();
+    showLifeAndScore();
 }
 
 /**
@@ -448,6 +488,9 @@ function startGame() {
     hideOverlay();
     gameStarted = true;
     initBackgroundAudio();  // Inicia el sonido de fondo
+    
+    // Mostrar botones de control cuando inicia el juego
+    document.querySelector('.header-controls').classList.remove('hidden');
 }
 
 /**
