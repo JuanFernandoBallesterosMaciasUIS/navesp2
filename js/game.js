@@ -44,7 +44,8 @@ var totalBestScoresToShow = CONFIG.TOP_SCORES_TO_SHOW;
 
 var playerShotsBuffer = [];
 var evilShotsBuffer   = [];
-var evilShotImage, playerShotImage, playerKilledImage;
+var powersBuffer      = [];    // Buffer para los poderes que caen
+var evilShotImage, playerShotImage, playerKilledImage, powerVidaImage, powerDisparoImage, powerVelocidadImage;
 
 var evilImages  = { animation: [], killed: null };
 var bossImages  = { animation: [], killed: null };
@@ -64,6 +65,13 @@ var nextPlayerShot  = 0;
 var playerShotDelay = CONFIG.PLAYER_SHOT_DELAY;
 var now             = 0;
 var playerName      = '';
+
+// Control de efectos de poderes
+var doubleFireActive = false;
+var doubleFireTimeout = null;
+var speedBoostActive = false;
+var speedBoostTimeout = null;
+var originalPlayerSpeed = CONFIG.PLAYER_SPEED;
 
 var overlay, startContent, endContent, pauseContent, mainMenuContent, tutorialContent, optionsContent, gameOverContent, victoryContent;
 var nameInput, startButton, restartButton, resumeButton, exitButton, finalText;
@@ -94,6 +102,9 @@ function preloadImages() {
     playerShotImage    = createImage('images/disparo_bueno.png');
     evilShotImage      = createImage('images/disparo_malo.png');
     playerKilledImage  = createImage('images/bueno_muerto.png');
+    powerVidaImage     = createImage('images/podervida.png');
+    powerDisparoImage  = createImage('images/poderdisparo.png');
+    powerVelocidadImage = createImage('images/podervelocidad.png');
 }
 
 /**
@@ -359,10 +370,17 @@ function resetGameState() {
     congratulations = false;
     playerShotsBuffer = [];
     evilShotsBuffer   = [];
+    powersBuffer      = [];    // Limpiar poderes
     now            = 0;
     nextPlayerShot = 0;
     finalAnimationTick = 0;
+    // Resetear efectos de poderes
+    doubleFireActive = false;
+    speedBoostActive = false;
+    if (doubleFireTimeout) clearTimeout(doubleFireTimeout);
+    if (speedBoostTimeout) clearTimeout(speedBoostTimeout);
     applyLevelConfiguration(currentLevel);
+    originalPlayerSpeed = playerSpeed;  // Actualizar velocidad original según el nivel
     player = new Player(playerLife, 0);
     createNewEvil();
     showLifeAndScore();
@@ -425,7 +443,15 @@ function startNextLevel() {
     evilCounter = 1;
     playerShotsBuffer = [];
     evilShotsBuffer = [];
+    powersBuffer = [];   // Limpiar poderes al cambiar de nivel
+    // Resetear efectos de poderes
+    doubleFireActive = false;
+    speedBoostActive = false;
+    if (doubleFireTimeout) clearTimeout(doubleFireTimeout);
+    if (speedBoostTimeout) clearTimeout(speedBoostTimeout);
     applyLevelConfiguration(currentLevel);
+    player.speed = playerSpeed;  // Restaurar velocidad original del nuevo nivel
+    originalPlayerSpeed = playerSpeed;  // Actualizar velocidad original para el nuevo nivel
     // Mostrar notificación del nivel
     showLevelTransition();
     createNewEvil();
@@ -486,6 +512,7 @@ function isEvilHittingPlayer() {
 /**
  * Verifica si un disparo del jugador impactó al enemigo activo.
  * Si hay impacto: reduce la vida del enemigo (o lo mata) y elimina el disparo.
+ * Si mata al enemigo, hay probabilidad de crear un poder aleatorio.
  * @param {PlayerShot} shot - El disparo a evaluar.
  * @returns {boolean} false si hubo impacto; true si el disparo puede continuar.
  */
@@ -496,11 +523,105 @@ function checkCollisions(shot) {
         } else {
             evil.kill();
             player.score += evil.pointsToKill;
+            // Crear poder aleatorio al matar un enemigo
+            createRandomPower(evil.posX + evil.image.width / 2, evil.posY);
         }
         shot.deleteShot(parseInt(shot.identifier));
         return false;
     }
     return true;
+}
+
+/**
+ * Crea un poder aleatorio con 40% de probabilidad.
+ * @param {number} x - Posición horizontal.
+ * @param {number} y - Posición vertical.
+ */
+function createRandomPower(x, y) {
+    // 40% de probabilidad de crear un poder
+    if (Math.random() < CONFIG.POWER_SPAWN_CHANCE) {
+        var types = ['vida', 'dobleDisparo', 'velocidad'];
+        var randomType = types[Math.floor(Math.random() * types.length)];
+        
+        // Crear objeto poder sin usar clase
+        var power = {
+            posX: x,
+            posY: y,
+            type: randomType,
+            width: 40,
+            height: 40,
+            speed: 2,
+            color: (randomType === 'vida') ? '#FF6B6B' : 
+                   (randomType === 'dobleDisparo') ? '#FFD93D' : '#6BCB77',
+            emoji: (randomType === 'vida') ? '❤️' : 
+                   (randomType === 'dobleDisparo') ? '🔫' : '⚡',
+            image: (randomType === 'vida') ? powerVidaImage : 
+                   (randomType === 'dobleDisparo') ? powerDisparoImage : powerVelocidadImage
+        };
+        
+        powersBuffer.push(power);
+    }
+}
+
+/**
+ * Verifica si el jugador ha colisionado con algún poder y aplica el efecto.
+ */
+function checkPowerCollisions() {
+    for (var i = powersBuffer.length - 1; i >= 0; i--) {
+        var power = powersBuffer[i];
+        if (!power) continue;
+        
+        // Detectar colisión con jugador
+        var hitPlayer = (power.posX >= player.posX && power.posX <= (player.posX + player.width) &&
+                        power.posY >= player.posY && power.posY <= (player.posY + player.height));
+        
+        if (hitPlayer) {
+            applyPowerEffect(power);
+            arrayRemove(powersBuffer, i);
+        } else if (power.posY > canvas.height) {
+            // Eliminar si sale de pantalla
+            arrayRemove(powersBuffer, i);
+        }
+    }
+}
+
+/**
+ * Aplica el efecto del poder al jugador según su tipo.
+ * @param {Power} power - El poder a aplicar.
+ */
+function applyPowerEffect(power) {
+    switch(power.type) {
+        case 'vida':
+            // Recuperar una vida, máximo CONFIG.POWER_MAX_LIVES
+            if (player.life < CONFIG.POWER_MAX_LIVES) {
+                player.life++;
+            }
+            break;
+        
+        case 'dobleDisparo':
+            // Activa disparo doble por 5 segundos
+            if (doubleFireTimeout) {
+                clearTimeout(doubleFireTimeout);
+            }
+            doubleFireActive = true;
+            doubleFireTimeout = setTimeout(function() {
+                doubleFireActive = false;
+            }, CONFIG.POWER_DURATION);
+            break;
+        
+        case 'velocidad':
+            // Aumenta velocidad por 5 segundos
+            if (speedBoostTimeout) {
+                clearTimeout(speedBoostTimeout);
+            }
+            player.speed = originalPlayerSpeed * 2.0;
+            speedBoostActive = true;
+            speedBoostTimeout = setTimeout(function() {
+                player.speed = originalPlayerSpeed;
+                speedBoostActive = false;
+            }, CONFIG.POWER_DURATION);
+            break;
+    }
 }
 
 /******************************* ENTRADA DE TECLADO *******************************/
@@ -606,6 +727,12 @@ function update(dt) {
 
     updateEvil(dt);
 
+    // Actualizar y renderizar poderes
+    for (var p = 0; p < powersBuffer.length; p++) {
+        updatePower(powersBuffer[p], p, dt);
+    }
+    checkPowerCollisions();
+
     for (var j = 0; j < playerShotsBuffer.length; j++) {
         updatePlayerShot(playerShotsBuffer[j], j, dt);
     }
@@ -680,6 +807,20 @@ function showLifeAndScore() {
         hearts += '\u2665 ';
     }
     bufferctx.fillText(hearts, canvas.width - 100, 45);
+    
+    // Mostrar indicadores de efectos activos
+    var yOffset = 60;
+    if (doubleFireActive) {
+        bufferctx.fillStyle = '#FFD93D';
+        bufferctx.font = 'bold 14px Arial';
+        bufferctx.fillText('🔫 Disparo Doble Activo', 10, yOffset);
+        yOffset += 20;
+    }
+    if (speedBoostActive) {
+        bufferctx.fillStyle = '#6BCB77';
+        bufferctx.font = 'bold 14px Arial';
+        bufferctx.fillText('⚡ Velocidad Activa', 10, yOffset);
+    }
 }
 
 /** Muestra la pantalla de derrota mediante el overlay. */
@@ -756,6 +897,45 @@ function updateEvilShot(shot, id, dt) {
             player.killPlayer();
         }
     }
+}
+
+/**
+ * Actualiza un poder: mueve hacia abajo, lo renderiza.
+ * @param {Object} power - El poder a actualizar.
+ * @param {number} id - Índice del poder en powersBuffer.
+ * @param {number} dt - Delta time en segundos.
+ */
+function updatePower(power, id, dt) {
+    if (!power) {
+        return;
+    }
+    
+    // Actualizar posición
+    power.posY += power.speed * dt * 60;
+    
+    // Si hay imagen, dibujarla; si no, usar color y emoji
+    if (power.image && power.image.complete) {
+        // Dibujar imagen
+        bufferctx.drawImage(power.image, power.posX, power.posY, power.width, power.height);
+    } else {
+        // Dibujar fondo de color
+        bufferctx.fillStyle = power.color || '#FFFFFF';
+        bufferctx.fillRect(power.posX, power.posY, power.width, power.height);
+        
+        // Dibujar emoji
+        bufferctx.fillStyle = '#000000';
+        bufferctx.font = 'bold 28px Arial';
+        bufferctx.textAlign = 'center';
+        bufferctx.textBaseline = 'middle';
+        var emoji = power.emoji || '?';
+        bufferctx.fillText(emoji, power.posX + power.width / 2, power.posY + power.height / 2);
+        bufferctx.textAlign = 'left';
+    }
+    
+    // Borde del poder (siempre se dibuja)
+    bufferctx.strokeStyle = '#FFFFFF';
+    bufferctx.lineWidth = 2;
+    bufferctx.strokeRect(power.posX, power.posY, power.width, power.height);
 }
 
 /******************************* API PÚBLICA *******************************/

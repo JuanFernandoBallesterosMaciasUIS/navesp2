@@ -3,7 +3,7 @@
  *
  * Depende de:
  *   - config.js  : CONFIG
- *   - utils.js   : createImage, arrayRemove, getRandomNumber
+ *   - utils.js   : createImage, getRandomNumber
  *   - game.js    : estado global (canvas, evil, player, playerShotsBuffer,
  *                  evilShotsBuffer, playerShotImage, evilShotImage,
  *                  playerKilledImage, evilImages, bossImages, evilSpeed,
@@ -11,7 +11,8 @@
  *                  finalBossShots, minHorizontalOffset, maxHorizontalOffset,
  *                  totalEvils, shotSpeed, playerSpeed, keyPressed,
  *                  nextPlayerShot, playerShotDelay, now, playerShot,
- *                  youLose, playerName, finalText)
+ *                  youLose, playerName, finalText, doubleFireActive, 
+ *                  speedBoostActive, doubleFireTimeout, speedBoostTimeout)
  *   - game.js    : funciones globales (verifyToCreateNewEvil, createNewEvil,
  *                  showOverlay)
  *   - scores.js  : saveFinalScore
@@ -218,8 +219,17 @@ function Player(life, score) {
 
     var shoot = function () {
         if (nextPlayerShot < now || now === 0) {
-            playerShot = new PlayerShot(player.posX + (player.width / 2) - 5, player.posY);
-            playerShot.add();
+            if (doubleFireActive) {
+                // Disparar dos proyectiles a ambos lados
+                playerShot = new PlayerShot(player.posX + (player.width / 4) - 5, player.posY);
+                playerShot.add();
+                playerShot = new PlayerShot(player.posX + (3 * player.width / 4) - 5, player.posY);
+                playerShot.add();
+            } else {
+                // Disparo normal en el centro
+                playerShot = new PlayerShot(player.posX + (player.width / 2) - 5, player.posY);
+                playerShot.add();
+            }
             now += playerShotDelay;
             nextPlayerShot = now + playerShotDelay;
         } else {
@@ -247,6 +257,12 @@ function Player(life, score) {
             this.dead = true;
             evilShotsBuffer.splice(0, evilShotsBuffer.length);
             playerShotsBuffer.splice(0, playerShotsBuffer.length);
+            powersBuffer.splice(0, powersBuffer.length);  // Limpiar poderes al morir
+            // Resetear efectos de poderes
+            doubleFireActive = false;
+            speedBoostActive = false;
+            if (doubleFireTimeout) clearTimeout(doubleFireTimeout);
+            if (speedBoostTimeout) clearTimeout(speedBoostTimeout);
             this.src = playerKilledImage.src;
             createNewEvil();
             setTimeout(function () {

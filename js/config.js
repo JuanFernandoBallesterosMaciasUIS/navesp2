@@ -51,7 +51,7 @@ var CONFIG = {
         },
         2: {
             name: 'NIVEL 2',
-            speedMultiplier: 1,
+            speedMultiplier: 0.9,
             totalEnemies: 9,
             baseLife: 4,
             baseShots: 5
@@ -65,12 +65,16 @@ var CONFIG = {
         },
         4: {
             name: 'JEFE FINAL',
-            speedMultiplier: 1.3,
+            speedMultiplier: 1.2,
             totalEnemies: 1,
             baseLife: 6,
             baseShots: 7,
             isBossLevel: true
         }
     },
-    LEVEL_TRANSITION_DELAY: 3000  // ms antes de mostrar el siguiente nivel
+    LEVEL_TRANSITION_DELAY: 3000,  // ms antes de mostrar el siguiente nivel
+    // Poderes
+    POWER_SPAWN_CHANCE: 0.4,      // probabilidad de que aparezca un poder (0-1)
+    POWER_DURATION: 10000,          // duración en ms de los poderes temporales
+    POWER_MAX_LIVES: 3             // máximo de vidas que puede tener el jugador
 };
