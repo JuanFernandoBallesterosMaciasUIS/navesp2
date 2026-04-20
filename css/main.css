@@ -20,6 +20,9 @@ a:hover {
     color: #506e2f;
     cursor: default;
 }
+.hidden {
+    display: none !important;
+}
 div.contenedor {
     width: 100vw;
     height: 100vh;
@@ -140,6 +143,7 @@ div.overlay-content {
     left: 0;
     top: 0;
     bottom: 0;
+    width: 120px;
     box-sizing: border-box;
     background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
     border-right: 2px solid rgba(76, 175, 80, 0.3);
@@ -201,6 +205,7 @@ div.overlay-content {
     right: 0;
     top: 0;
     bottom: 0;
+    width: 180px;
     box-sizing: border-box;
     background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
     border-left: 2px solid rgba(76, 175, 80, 0.3);
@@ -402,9 +407,10 @@ div.overlay-content input:focus {
 /* ===== BOTONES DE CONTROL EN PANTALLA ===== */
 .header-controls {
     position: absolute;
-    bottom: 14px;
-    right: 14px;
-    z-index: 5;
+    bottom: 9px;
+    left: calc(50% + 220px);
+    transform: translateX(-50%);
+    z-index: 20;
     display: flex;
     gap: 10px;
     background: rgba(0, 0, 0, 0.15);
@@ -420,7 +426,7 @@ div.overlay-content input:focus {
     font-size: 14px;
     font-weight: bold;
     color: #00ff99;
-    background: linear-gradient(180deg, #0f1620 0%, #111d29 100%);
+    background: linear-gradient(180deg, #2d5a2d 0%, #1a3a1a 100%);
     border: 3px solid #00ff99;
     border-radius: 12px;
     cursor: pointer;
@@ -430,6 +436,20 @@ div.overlay-content input:focus {
     letter-spacing: 1px;
     font-family: 'Arial', sans-serif;
     overflow: hidden;
+}
+.control-btn.sound-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(76, 175, 80, 0.9);
+    border: 2px solid #81c784;
+    padding: 0;
+    min-width: auto;
+    min-height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
 }
 .control-btn::before {
     content: '';
@@ -473,14 +493,15 @@ div.overlay-content input:focus {
 .sound-toggle-btn {
     position: absolute;
     top: 10px;
-    right: 10px;
+    left: calc(50% + 170px);
+    transform: translateX(-50%);
     width: 50px;
     height: 50px;
     border-radius: 50%;
     background: rgba(76, 175, 80, 0.9);
     border: 2px solid #81c784;
     cursor: pointer;
-    z-index: 5;
+    z-index: 20;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -489,13 +510,13 @@ div.overlay-content input:focus {
     padding: 0;
 }
 
-.sound-toggle-btn:hover {
+.control-btn.sound-btn:hover {
     background: rgba(76, 175, 80, 1);
     box-shadow: 0 6px 25px rgba(76, 175, 80, 0.6);
     transform: scale(1.1);
 }
 
-.sound-toggle-btn:active {
+.control-btn.sound-btn:active {
     transform: scale(0.95);
 }
 

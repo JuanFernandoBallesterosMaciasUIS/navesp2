@@ -329,6 +329,9 @@ function showOverlay(type) {
         gamePaused = false;
         stopBackgroundAudio();  // Detiene el sonido de fondo
         updatePauseButtonLabel();
+        
+        // Ocultar botones de control
+        document.querySelector('.header-controls').classList.add('hidden');
     } else if (type === 'nameInput') {
         startContent.classList.remove('hidden');
         if (mainMenuScoresPanel) { mainMenuScoresPanel.classList.remove('hidden'); }
@@ -430,6 +433,9 @@ function startGame() {
     hideOverlay();
     gameStarted = true;
     initBackgroundAudio();  // Inicia el sonido de fondo
+    
+    // Mostrar botones de control cuando inicia el juego
+    document.querySelector('.header-controls').classList.remove('hidden');
 }
 
 /**
