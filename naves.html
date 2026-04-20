@@ -18,6 +18,17 @@
 <body onload="game.init()">
     <div class="contenedor">
         <div class="juego">
+            <div class="header-controls hidden">
+                <button id="pauseButton" class="control-btn pause-toggle-btn" title="Pausar juego" aria-label="Pausar juego">
+                    <span class="control-icon">❚❚</span>
+                </button>
+                <button id="restartLevelBtn" class="control-btn restart-btn" title="Reiniciar el nivel actual" aria-label="Reiniciar el nivel">
+                    <span class="control-icon">↺</span>
+                </button>
+                <button id="soundToggleBtn" class="control-btn sound-btn" title="Pausar/Continuar sonido">
+                    <img src="Iconos/sound.png" alt="Sonido" class="sound-icon">
+                </button>
+            </div>
             <div id="gameLeftPanel" class="game-left-panel">
                 <img src="images/imageizq.png" alt="" class="panel-left-img">
             </div>
@@ -32,9 +43,6 @@
                     <tbody></tbody>
                 </table>
             </div>
-            <button id="soundToggleBtn" class="sound-toggle-btn" title="Pausar/Continuar sonido">
-                <img src="Iconos/sound.png" alt="Sonido" class="sound-icon">
-            </button>
             <div id="overlay" class="overlay">
                 <div id="mainMenuLeftPanel" class="main-menu-left-panel">
                     <img src="images/imageizq.png" alt="" class="panel-left-img">
@@ -105,13 +113,18 @@
                     <div id="optionsContent" class="hidden">
                         <h2>OPCIONES</h2>
                         <p style="color: #81c784;">Configuración del juego</p>
-                        <p style="margin: 20px 0; padding: 15px; background: rgba(76, 175, 80, 0.1); border-left: 3px solid #4caf50;">
-                             Sonido y música (próximas versiones)<br>
-                             Temas visuales (próximas versiones)<br>
-                             Personalizar controles (próximas versiones)
-                        </p>
+
+                        <div class="melody-selector">
+                            <p class="melody-selector-title">🎵 MELODÍA DE FONDO</p>
+                            <div class="melody-btns-row">
+                                <button class="melody-btn melody-btn-active" data-src="Sonidos/Melodia_1.mp3" onclick="changeTrack('Sonidos/Melodia_1.mp3')">🔷 Melodía 1</button>
+                                <button class="melody-btn" data-src="Sonidos/Melodia_2.mp3" onclick="changeTrack('Sonidos/Melodia_2.mp3')">🔶 Melodía 2</button>
+                                <button class="melody-btn" data-src="Sonidos/Melodia_3.mp3" onclick="changeTrack('Sonidos/Melodia_3.mp3')">🔹 Melodía 3</button>
+                            </div>
+                        </div>
+
                         <button id="especificacionesButton" class="btn btn-secondary" style="margin-bottom: 10px;">
-                            <span class="btn-icon"></span> ESPECIFICACIONES DEL JUEGO
+                            <span class="btn-icon">ℹ️</span> ESPECIFICACIONES DEL JUEGO
                         </button>
                         <button id="backFromOptionsButton" class="btn btn-secondary">
                             <span class="btn-icon">◀</span> ATRÁS

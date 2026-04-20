@@ -52,6 +52,7 @@ var bossImages  = { animation: [], killed: null };
 
 var backgroundAudio = null;  // Variable para el sonido de fondo
 var backgroundAudioPaused = false;  // Variable para rastrear si el sonido está pausado
+var currentTrack = 'Sonidos/Melodia_1.mp3';  // Melodía activa
 
 var keyPressed = {};
 var keyMap = {
@@ -81,7 +82,7 @@ var nameInput, startButton, restartButton, resumeButton, exitButton, finalText;
 var playButton, backButton, tutorialButton, optionsButton, quitButton, especificacionesButton;
 var backFromTutorialButton, backFromOptionsButton, backFromEspecificacionesButton;
 var gameOverRestartButton, gameOverMenuButton, victoryRestartButton, victoryMenuButton;
-var soundToggleBtn;  // Botón de control de sonido
+var pauseButton, restartLevelBtn, soundToggleBtn;  // Botones de control
 var finalAnimationTick = 0;
 var gameStarted = false;
 var gamePaused = false;
@@ -140,12 +141,48 @@ function scaleCanvas() {
 function initBackgroundAudio() {
     if (!backgroundAudio) {
         backgroundAudio = new Audio();
-        backgroundAudio.src = 'Sonidos/Sonido_fondo.mp3';
         backgroundAudio.loop = true;
-        backgroundAudio.volume = 0.5;  // Volumen al 50%
+        backgroundAudio.volume = 0.5;
+    }
+    if (backgroundAudio.src.indexOf(currentTrack) === -1) {
+        backgroundAudio.src = currentTrack;
     }
     backgroundAudio.play();
     backgroundAudioPaused = false;
+}
+
+/**
+ * Cambia la melodía de fondo al archivo indicado.
+ */
+function changeTrack(src) {
+    currentTrack = src;
+    if (!backgroundAudio) {
+        backgroundAudio = new Audio();
+        backgroundAudio.loop = true;
+        backgroundAudio.volume = 0.5;
+        backgroundAudio.src = currentTrack;
+        backgroundAudio.play();
+        backgroundAudioPaused = false;
+    } else {
+        var wasPaused = backgroundAudioPaused;
+        backgroundAudio.pause();
+        backgroundAudio.src = currentTrack;
+        backgroundAudio.loop = true;
+        backgroundAudio.volume = 0.5;
+        if (!wasPaused) {
+            backgroundAudio.play();
+            backgroundAudioPaused = false;
+        }
+    }
+    // Actualizar botones activos
+    var btns = document.querySelectorAll('.melody-btn');
+    for (var i = 0; i < btns.length; i++) {
+        if (btns[i].getAttribute('data-src') === src) {
+            btns[i].classList.add('melody-btn-active');
+        } else {
+            btns[i].classList.remove('melody-btn-active');
+        }
+    }
 }
 
 /**
@@ -236,6 +273,8 @@ function init() {
     gameOverMenuButton = document.getElementById('gameOverMenuButton');
     victoryRestartButton = document.getElementById('victoryRestartButton');
     victoryMenuButton = document.getElementById('victoryMenuButton');
+    pauseButton = document.getElementById('pauseButton');
+    restartLevelBtn = document.getElementById('restartLevelBtn');
     soundToggleBtn = document.getElementById('soundToggleBtn');
 
     addListener(document, 'keydown', keyDown);
@@ -268,7 +307,7 @@ function init() {
         alert('¡Gracias por jugar!');
     });
     addListener(backFromTutorialButton, 'click', function() {
-        showOverlay('start');
+        showOverlay('nameInput');
     });
     addListener(backFromOptionsButton, 'click', function() {
         showOverlay('mainMenu');
@@ -298,6 +337,8 @@ function init() {
         resetGameState();
         showOverlay('mainMenu');
     });
+    addListener(pauseButton, 'click', togglePause);
+    addListener(restartLevelBtn, 'click', restartLevel);
     addListener(soundToggleBtn, 'click', toggleBackgroundAudio);
     addListener(nameInput, 'keydown', function (e) {
         var key = (window.event ? e.keyCode : e.which);
@@ -347,6 +388,10 @@ function showOverlay(type) {
         gameStarted = false;
         gamePaused = false;
         stopBackgroundAudio();  // Detiene el sonido de fondo
+        updatePauseButtonLabel();
+        
+        // Ocultar botones de control
+        document.querySelector('.header-controls').classList.add('hidden');
     } else if (type === 'nameInput') {
         startContent.classList.remove('hidden');
         if (mainMenuScoresPanel) { mainMenuScoresPanel.classList.remove('hidden'); }
@@ -400,15 +445,47 @@ function hideOverlay() {
 }
 
 /** Alterna entre pausado y reanudado. Si está pausado, lo reanuda; si está en juego, lo pausa. */
+function updatePauseButtonLabel() {
+    if (pauseButton) {
+        pauseButton.innerHTML = gamePaused ? '<span class="control-icon">▶</span>' : '<span class="control-icon">❚❚</span>';
+        var label = gamePaused ? 'Reanudar juego' : 'Pausar juego';
+        pauseButton.title = label;
+        pauseButton.setAttribute('aria-label', label);
+    }
+}
+
 function togglePause() {
     if (gameStarted && !youLose && !congratulations) {
         gamePaused = !gamePaused;
+        updatePauseButtonLabel();
         if (gamePaused) {
             showOverlay('pause');
         } else {
             hideOverlay();
         }
     }
+}
+
+function restartLevel() {
+    if (!gameStarted || youLose || congratulations) {
+        return;
+    }
+
+    gamePaused = false;
+    hideOverlay();
+    playerShotsBuffer = [];
+    evilShotsBuffer = [];
+    now = 0;
+    nextPlayerShot = 0;
+    finalAnimationTick = 0;
+    var currentLife = player ? player.life : CONFIG.PLAYER_LIVES;
+    var currentScore = player ? player.score : 0;
+    applyLevelConfiguration(currentLevel);
+    evilCounter = 1;
+    player = new Player(currentLife, currentScore);
+    createNewEvil();
+    updatePauseButtonLabel();
+    showLifeAndScore();
 }
 
 /**
@@ -422,6 +499,9 @@ function startGame() {
     hideOverlay();
     gameStarted = true;
     initBackgroundAudio();  // Inicia el sonido de fondo
+    
+    // Mostrar botones de control cuando inicia el juego
+    document.querySelector('.header-controls').classList.remove('hidden');
 }
 
 /**

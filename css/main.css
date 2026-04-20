@@ -20,6 +20,9 @@ a:hover {
     color: #506e2f;
     cursor: default;
 }
+.hidden {
+    display: none !important;
+}
 div.contenedor {
     width: 100vw;
     height: 100vh;
@@ -382,6 +385,7 @@ div.overlay-content {
     left: 0;
     top: 0;
     bottom: 0;
+    width: 120px;
     box-sizing: border-box;
     background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
     border-right: 2px solid rgba(76, 175, 80, 0.3);
@@ -443,6 +447,7 @@ div.overlay-content {
     right: 0;
     top: 0;
     bottom: 0;
+    width: 180px;
     box-sizing: border-box;
     background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
     border-left: 2px solid rgba(76, 175, 80, 0.3);
@@ -620,6 +625,52 @@ div.overlay-content button {
     transform: translateY(-1px);
 }
 
+/* ===== SELECTOR DE MELODÍAS ===== */
+.melody-selector {
+    margin: 15px 0 20px;
+    padding: 14px 16px;
+    background: rgba(76, 175, 80, 0.08);
+    border-left: 3px solid #4caf50;
+    border-radius: 4px;
+}
+.melody-selector-title {
+    color: #81c784;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 0 0 10px;
+    font-weight: bold;
+}
+.melody-btns-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.melody-btn {
+    background: rgba(33, 150, 243, 0.15);
+    border: 2px solid rgba(33, 150, 243, 0.4);
+    color: #90caf9;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: 'Arial', sans-serif;
+    transition: background 0.2s, border-color 0.2s, transform 0.1s;
+}
+.melody-btn:hover {
+    background: rgba(33, 150, 243, 0.3);
+    border-color: #42a5f5;
+    transform: translateY(-2px);
+}
+.melody-btn-active {
+    background: linear-gradient(135deg, #1976D2, #1565C0);
+    border-color: #42a5f5;
+    color: #fff;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+}
+
 .btn-icon {
     font-size: 18px;
     display: inline-block;
@@ -666,18 +717,104 @@ div.overlay-content input:focus {
     box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
 }
 
+/* ===== BOTONES DE CONTROL EN PANTALLA ===== */
+.header-controls {
+    position: absolute;
+    bottom: 9px;
+    left: calc(50% + 220px);
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 8px;
+    border-radius: 12px;
+    box-shadow: 0 0 18px rgba(0, 0, 0, 0.35);
+}
+.control-btn {
+    position: relative;
+    padding: 12px 16px;
+    min-width: 48px;
+    min-height: 48px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #00ff99;
+    background: linear-gradient(180deg, #2d5a2d 0%, #1a3a1a 100%);
+    border: 3px solid #00ff99;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 0 0 4px rgba(0, 255, 153, 0.08), inset 0 -3px 0 rgba(0, 255, 153, 0.15), 0 6px 20px rgba(0, 255, 153, 0.18);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Arial', sans-serif;
+    overflow: hidden;
+}
+.control-btn.sound-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(76, 175, 80, 0.9);
+    border: 2px solid #81c784;
+    padding: 0;
+    min-width: auto;
+    min-height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+.control-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 120%;
+    height: 120%;
+    background: rgba(0, 255, 153, 0.08);
+    transform: translate(-50%, -50%) scale(0);
+    border-radius: 16px;
+    transition: transform 0.3s ease;
+    pointer-events: none;
+}
+.control-btn:hover::before {
+    transform: translate(-50%, -50%) scale(1);
+}
+.control-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 0 4px rgba(0, 255, 153, 0.12), inset 0 -3px 0 rgba(0, 255, 153, 0.25), 0 8px 24px rgba(0, 255, 153, 0.28);
+}
+.control-btn:active {
+    transform: translateY(0);
+}
+.control-btn .control-icon {
+    display: inline-block;
+    font-size: 18px;
+    line-height: 1;
+    letter-spacing: 0.5px;
+}
+.control-btn.restart-btn {
+    width: 48px;
+    padding: 12px;
+    border-radius: 14px;
+}
+.control-btn.restart-btn .control-icon {
+    font-size: 20px;
+}
+
 /* ===== BOTÓN DE SONIDO ===== */
 .sound-toggle-btn {
     position: absolute;
     top: 10px;
-    right: 10px;
+    left: calc(50% + 170px);
+    transform: translateX(-50%);
     width: 50px;
     height: 50px;
     border-radius: 50%;
     background: rgba(76, 175, 80, 0.9);
     border: 2px solid #81c784;
     cursor: pointer;
-    z-index: 5;
+    z-index: 20;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -686,13 +823,13 @@ div.overlay-content input:focus {
     padding: 0;
 }
 
-.sound-toggle-btn:hover {
+.control-btn.sound-btn:hover {
     background: rgba(76, 175, 80, 1);
     box-shadow: 0 6px 25px rgba(76, 175, 80, 0.6);
     transform: scale(1.1);
 }
 
-.sound-toggle-btn:active {
+.control-btn.sound-btn:active {
     transform: scale(0.95);
 }
 
