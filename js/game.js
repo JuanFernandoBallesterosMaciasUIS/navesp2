@@ -70,7 +70,7 @@ var nameInput, startButton, restartButton, resumeButton, exitButton, finalText;
 var playButton, backButton, tutorialButton, optionsButton, quitButton;
 var backFromTutorialButton, backFromOptionsButton;
 var gameOverRestartButton, gameOverMenuButton, victoryRestartButton, victoryMenuButton;
-var soundToggleBtn;  // Botón de control de sonido
+var pauseButton, restartLevelBtn, soundToggleBtn;  // Botones de control
 var finalAnimationTick = 0;
 var gameStarted = false;
 var gamePaused = false;
@@ -185,6 +185,8 @@ function init() {
     gameOverMenuButton = document.getElementById('gameOverMenuButton');
     victoryRestartButton = document.getElementById('victoryRestartButton');
     victoryMenuButton = document.getElementById('victoryMenuButton');
+    pauseButton = document.getElementById('pauseButton');
+    restartLevelBtn = document.getElementById('restartLevelBtn');
     soundToggleBtn = document.getElementById('soundToggleBtn');
 
     addListener(document, 'keydown', keyDown);
@@ -235,6 +237,8 @@ function init() {
         resetGameState();
         showOverlay('mainMenu');
     });
+    addListener(pauseButton, 'click', togglePause);
+    addListener(restartLevelBtn, 'click', restartLevel);
     addListener(soundToggleBtn, 'click', toggleBackgroundAudio);
     addListener(nameInput, 'keydown', function (e) {
         var key = (window.event ? e.keyCode : e.which);
@@ -279,6 +283,7 @@ function showOverlay(type) {
         gameStarted = false;
         gamePaused = false;
         stopBackgroundAudio();  // Detiene el sonido de fondo
+        updatePauseButtonLabel();
     } else if (type === 'nameInput') {
         startContent.classList.remove('hidden');
         nameInput.value = playerName || '';
@@ -324,15 +329,47 @@ function hideOverlay() {
 }
 
 /** Alterna entre pausado y reanudado. Si está pausado, lo reanuda; si está en juego, lo pausa. */
+function updatePauseButtonLabel() {
+    if (pauseButton) {
+        pauseButton.innerHTML = gamePaused ? '<span class="control-icon">▶</span>' : '<span class="control-icon">❚❚</span>';
+        var label = gamePaused ? 'Reanudar juego' : 'Pausar juego';
+        pauseButton.title = label;
+        pauseButton.setAttribute('aria-label', label);
+    }
+}
+
 function togglePause() {
     if (gameStarted && !youLose && !congratulations) {
         gamePaused = !gamePaused;
+        updatePauseButtonLabel();
         if (gamePaused) {
             showOverlay('pause');
         } else {
             hideOverlay();
         }
     }
+}
+
+function restartLevel() {
+    if (!gameStarted || youLose || congratulations) {
+        return;
+    }
+
+    gamePaused = false;
+    hideOverlay();
+    playerShotsBuffer = [];
+    evilShotsBuffer = [];
+    now = 0;
+    nextPlayerShot = 0;
+    finalAnimationTick = 0;
+    var currentLife = player ? player.life : CONFIG.PLAYER_LIVES;
+    var currentScore = player ? player.score : 0;
+    applyLevelConfiguration(currentLevel);
+    evilCounter = 1;
+    player = new Player(currentLife, currentScore);
+    createNewEvil();
+    updatePauseButtonLabel();
+    showLifeAndScore();
 }
 
 /**
