@@ -49,6 +49,9 @@ var evilShotImage, playerShotImage, playerKilledImage;
 var evilImages  = { animation: [], killed: null };
 var bossImages  = { animation: [], killed: null };
 
+var backgroundAudio = null;  // Variable para el sonido de fondo
+var backgroundAudioPaused = false;  // Variable para rastrear si el sonido está pausado
+
 var keyPressed = {};
 var keyMap = {
     left:  37,
@@ -69,6 +72,7 @@ var nameInput, startButton, restartButton, resumeButton, exitButton, finalText;
 var playButton, backButton, tutorialButton, optionsButton, quitButton, especificacionesButton;
 var backFromTutorialButton, backFromOptionsButton, backFromEspecificacionesButton;
 var gameOverRestartButton, gameOverMenuButton, victoryRestartButton, victoryMenuButton;
+var soundToggleBtn;  // Botón de control de sonido
 var finalAnimationTick = 0;
 var gameStarted = false;
 var gamePaused = false;
@@ -112,6 +116,52 @@ function scaleCanvas() {
     var panels = [gameLeftPanel, gameScoresPanel, mainMenuLeftPanel, mainMenuScoresPanel];
     for (var i = 0; i < panels.length; i++) {
         if (panels[i]) { panels[i].style.width = panelWidth + 'px'; }
+    }
+}
+
+/******************************* AUDIO DE FONDO ********************************/
+
+/**
+ * Crea e inicializa el sonido de fondo.
+ * Carga el archivo de audio y lo configura para reproducirse en loop.
+ */
+function initBackgroundAudio() {
+    if (!backgroundAudio) {
+        backgroundAudio = new Audio();
+        backgroundAudio.src = 'Sonidos/Sonido_fondo.mp3';
+        backgroundAudio.loop = true;
+        backgroundAudio.volume = 0.5;  // Volumen al 50%
+    }
+    backgroundAudio.play();
+    backgroundAudioPaused = false;
+}
+
+/**
+ * Alterna entre pausar y continuar el sonido de fondo.
+ */
+function toggleBackgroundAudio() {
+    if (backgroundAudio) {
+        if (backgroundAudioPaused) {
+            backgroundAudio.play();
+            backgroundAudioPaused = false;
+            soundToggleBtn.style.opacity = '1';
+        } else {
+            backgroundAudio.pause();
+            backgroundAudioPaused = true;
+            soundToggleBtn.style.opacity = '0.5';
+        }
+    }
+}
+
+/**
+ * Detiene el sonido de fondo completamente (para cuando termina el juego).
+ */
+function stopBackgroundAudio() {
+    if (backgroundAudio) {
+        backgroundAudio.pause();
+        backgroundAudio.currentTime = 0;
+        backgroundAudioPaused = false;
+        soundToggleBtn.style.opacity = '1';
     }
 }
 
@@ -171,6 +221,7 @@ function init() {
     gameOverMenuButton = document.getElementById('gameOverMenuButton');
     victoryRestartButton = document.getElementById('victoryRestartButton');
     victoryMenuButton = document.getElementById('victoryMenuButton');
+    soundToggleBtn = document.getElementById('soundToggleBtn');
 
     addListener(document, 'keydown', keyDown);
     addListener(document, 'keyup', keyUp);
@@ -226,6 +277,7 @@ function init() {
         resetGameState();
         showOverlay('mainMenu');
     });
+    addListener(soundToggleBtn, 'click', toggleBackgroundAudio);
     addListener(nameInput, 'keydown', function (e) {
         var key = (window.event ? e.keyCode : e.which);
         if (key === 13) {
@@ -271,6 +323,7 @@ function showOverlay(type) {
         if (mainMenuScoresPanel) { mainMenuScoresPanel.classList.remove('hidden'); }
         gameStarted = false;
         gamePaused = false;
+        stopBackgroundAudio();  // Detiene el sonido de fondo
     } else if (type === 'nameInput') {
         startContent.classList.remove('hidden');
         if (mainMenuScoresPanel) { mainMenuScoresPanel.classList.remove('hidden'); }
@@ -339,6 +392,7 @@ function startGame() {
     resetGameState();
     hideOverlay();
     gameStarted = true;
+    initBackgroundAudio();  // Inicia el sonido de fondo
 }
 
 /**
@@ -445,6 +499,7 @@ function startVictorySequence() {
 
 /** Muestra el overlay de victoria. */
 function showVictoryOverlay() {
+    stopBackgroundAudio();  // Detiene el sonido de fondo
     showOverlay('victory');
     congratulations = false;
 }
@@ -677,6 +732,7 @@ function showLifeAndScore() {
 
 /** Muestra la pantalla de derrota mediante el overlay. */
 function showGameOver() {
+    stopBackgroundAudio();  // Detiene el sonido de fondo
     showOverlay('gameOver');
 }
 
