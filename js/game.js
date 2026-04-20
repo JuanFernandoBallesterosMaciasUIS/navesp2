@@ -769,7 +769,7 @@ function update(dt) {
         // Durante la transición de nivel, mostrar el mensaje
         bufferctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         bufferctx.fillRect(0, 0, canvas.width, canvas.height);
-        bufferctx.fillStyle = '#FFD700';
+        bufferctx.fillStyle = '#26b619';
         bufferctx.font = 'bold 32px Arial';
         var levelConfig = CONFIG.LEVELS[currentLevel];
         bufferctx.fillText(levelConfig.name, canvas.width/2 - 150, canvas.height/2);
@@ -866,7 +866,7 @@ function showLifeAndScore() {
     
     // Mostrar nivel
     bufferctx.textAlign = 'left';
-    bufferctx.fillStyle = '#FFD700';
+    bufferctx.fillStyle = '#26b619';
     bufferctx.font = 'bold 14px Arial';
     bufferctx.fillText('Nivel ' + currentLevel, 10, 20);
     
