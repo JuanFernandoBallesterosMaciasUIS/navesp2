@@ -3,6 +3,7 @@
 <head>
     
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Videojuego con Javascript y HTML5</title>
     <link type="text/css" rel="stylesheet" href="css/reset.css?20260410">
     <link type="text/css" rel="stylesheet" href="css/main.css?20260410">
@@ -10,50 +11,41 @@
     <script src="js/config.js?20260410"   type="text/javascript"></script>
     <script src="js/utils.js?20260410"    type="text/javascript"></script>
     <script src="js/entities.js?20260410" type="text/javascript"></script>
-    <script src="js/scores.js?20260410"   type="text/javascript"></script>
-    <script src="js/game.js?20260410"     type="text/javascript"></script>
+    <script src="js/scores.js?20260410"        type="text/javascript"></script>
+    <script src="js/achievements.js?20260410"  type="text/javascript"></script>
+    <script src="js/game.js?20260410"          type="text/javascript"></script>
 </head>
 <body onload="game.init()">
     <div class="contenedor">
-        <div class="izquierda">
-            <div class="logo-container">
-                <img src="images/logo.png" class="sidebar-logo" alt="Game Logo" />
-            </div>
-            <ul class="lista">
-                <li class="titulo">CONTROLES:</li>
-                <li class="izquierda">izquierda</li>
-                <li class="derecha">derecha</li>
-                <li class="espacio">disparar</li>
-            </ul>
-            <ul class="lista">
-                <li class="titulo">PROBADO CON:</li>
-                <li class="firefox">Mozilla Firefox 11</li>
-                <li class="chrome">Google Chrome 18</li>
-                <li class="safari">Safari 5.1</li>
-            </ul>
-            <ul class="lista">
-                <li class="titulo">OTROS:</li>
-                <li><span class="nav-placeholder">Tutorial</span></li>
-                <li><span class="nav-placeholder">Especificaciones del juego</span></li>
-            </ul>
-        </div>
-        <div class="derecha">
-            <h3 class="tituloPuntuaciones">MEJORES PUNTUACIONES</h3>
-            <table id="puntuaciones">
-                <thead>
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Puntos</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
         <div class="juego">
+            <div id="gameLeftPanel" class="game-left-panel">
+                <img src="images/imageizq.png" alt="" class="panel-left-img">
+            </div>
+            <div id="gameScoresPanel" class="game-scores-panel">
+                <div class="current-score-box">
+                    <p class="current-score-label">PUNTUACIÓN ACTUAL</p>
+                    <p id="currentScoreDisplay" class="current-score-value">0</p>
+                </div>
+                <h3 class="scores-title">🏆 MEJORES PUNTUACIONES</h3>
+                <table id="puntuacionesGame">
+                    <thead><tr><th>Nombre</th><th>Pts</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
             <button id="soundToggleBtn" class="sound-toggle-btn" title="Pausar/Continuar sonido">
                 <img src="Iconos/sound.png" alt="Sonido" class="sound-icon">
             </button>
             <div id="overlay" class="overlay">
+                <div id="mainMenuLeftPanel" class="main-menu-left-panel">
+                    <img src="images/imageizq.png" alt="" class="panel-left-img">
+                </div>
+                <div id="mainMenuScoresPanel" class="main-menu-scores-panel hidden">
+                    <h3 class="scores-title">🏆 MEJORES PUNTUACIONES</h3>
+                    <table id="puntuaciones">
+                        <thead><tr><th>Nombre</th><th>Puntos</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
                 <div class="overlay-content">
                     <div id="mainMenuContent" class="main-menu">
                         <div class="menu-logo">
@@ -65,8 +57,8 @@
                             <button id="playButton" class="btn btn-primary">
                                 <span class="btn-icon"></span> JUGAR
                             </button>
-                            <button id="tutorialButton" class="btn btn-secondary">
-                                <span class="btn-icon"></span> TUTORIAL
+                            <button id="logrosButton" class="btn btn-secondary">
+                                <span class="btn-icon">🏅</span> LOGROS
                             </button>
                             <button id="optionsButton" class="btn btn-secondary">
                                 <span class="btn-icon"></span> OPCIONES
@@ -82,6 +74,9 @@
                         <div class="menu-buttons">
                             <button id="startButton" class="btn btn-primary">
                                 <span class="btn-icon"></span>JUGAR
+                            </button>
+                            <button id="tutorialButton" class="btn btn-secondary">
+                                <span class="btn-icon"></span> TUTORIAL
                             </button>
                             <button id="backButton" class="btn btn-secondary">
                                 <span class="btn-icon"></span> ATRÁS
@@ -115,7 +110,72 @@
                              Temas visuales (próximas versiones)<br>
                              Personalizar controles (próximas versiones)
                         </p>
+                        <button id="especificacionesButton" class="btn btn-secondary" style="margin-bottom: 10px;">
+                            <span class="btn-icon"></span> ESPECIFICACIONES DEL JUEGO
+                        </button>
                         <button id="backFromOptionsButton" class="btn btn-secondary">
+                            <span class="btn-icon">◀</span> ATRÁS
+                        </button>
+                    </div>
+                    <div id="especificacionesContent" class="hidden">
+                        <h2>¿CÓMO SE JUEGA?</h2>
+                        <p style="color: #81c784; margin-bottom: 15px;">Todo lo que necesitas saber antes de jugar</p>
+                        <div class="specs-grid">
+
+                            <div class="specs-section">
+                                <h4 class="specs-section-title">🎮 CONTROLES</h4>
+                                <div class="specs-row"><span class="specs-key">◀  ▶</span><span>Mover la nave</span></div>
+                                <div class="specs-row"><span class="specs-key">Espacio</span><span>Disparar</span></div>
+                                <div class="specs-row"><span class="specs-key">ESC</span><span>Pausar / Seguir</span></div>
+                            </div>
+
+                            <div class="specs-section">
+                                <h4 class="specs-section-title">👾 LOS NIVELES</h4>
+                                <table class="specs-table">
+                                    <thead><tr><th>Nivel</th><th>Enemigos</th><th>Dificultad</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>1 — Fácil</td><td>6</td><td>⭐</td></tr>
+                                        <tr><td>2 — Normal</td><td>9</td><td>⭐⭐</td></tr>
+                                        <tr><td>3 — Difícil</td><td>12</td><td>⭐⭐⭐</td></tr>
+                                        <tr class="specs-boss-row"><td>👑 Jefe Final</td><td>1</td><td>💀💀💀</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="specs-section">
+                                <h4 class="specs-section-title">🏆 PUNTUACIONES</h4>
+                                <div class="specs-row"><span class="specs-label">Se guardan los mejores</span><span class="specs-val">Top 5</span></div>
+                                <div class="specs-row"><span class="specs-label">Derrotar al jefe final</span><span class="specs-val">+20 puntos</span></div>
+                                <div class="specs-row"><span class="specs-label">¿Se borran al cerrar?</span><span class="specs-val">No, se guardan 💾</span></div>
+                            </div>
+
+                            <div class="specs-section">
+                                <h4 class="specs-section-title">💡 CONSEJOS</h4>
+                                <div class="specs-row">⚡<span>Mantén el botón de disparo presionado</span></div>
+                                <div class="specs-row">🔀<span>Muévete para esquivar balas</span></div>
+                                <div class="specs-row">❤️<span>Cuida tus vidas — dan puntos extra</span></div>
+                                <div class="specs-row">👑<span>El jefe final dispara mucho — ¡cuidado!</span></div>
+                            </div>
+
+                            <div class="specs-section">
+                                <h4 class="specs-section-title">🌐 COMPATIBLE CON</h4>
+                                <div class="specs-row"><span>🟡</span><span>Google Chrome</span></div>
+                                <div class="specs-row"><span>🦊</span><span>Mozilla Firefox</span></div>
+                                <div class="specs-row"><span>🧭</span><span>Safari</span></div>
+                                <div class="specs-row"><span>🔵</span><span>Microsoft Edge</span></div>
+                            </div>
+
+                        </div>
+                        <button id="backFromEspecificacionesButton" class="btn btn-secondary" style="margin-top: 20px;">
+                            <span class="btn-icon">◀</span> ATRÁS
+                        </button>
+                    </div>
+
+                    <div id="logrosContent" class="hidden">
+                        <h2>🏅 LOGROS</h2>
+                        <p id="achievementsCounter" style="color: #81c784; margin-bottom: 14px; font-size: 13px;">0 / 10 logros desbloqueados</p>
+                        <div id="achievementsListContainer" class="achiev-list"></div>
+                        <button id="backFromLogrosButton" class="btn btn-secondary" style="margin-top: 16px;">
                             <span class="btn-icon">◀</span> ATRÁS
                         </button>
                     </div>
@@ -142,7 +202,14 @@
                     <div id="gameOverContent" class="hidden">
                         <h2 style="color: #ff6b6b; font-size: 48px; margin-bottom: 20px;"> GAME OVER 💀</h2>
                         <p style="font-size: 24px; color: #81c784; margin-bottom: 10px;">¡Inténtalo de nuevo!</p>
-                        <p style="font-size: 18px; color: #fff; margin-bottom: 30px;">Puntos: <span style="color: #ffeb3b;" id="gameOverScore">0</span></p>
+                        <p style="font-size: 18px; color: #fff; margin-bottom: 15px;">Puntos: <span style="color: #ffeb3b;" id="gameOverScore">0</span></p>
+                        <div class="menu-scores" style="margin-bottom: 20px;">
+                            <h3 class="scores-title">🏆 MEJORES PUNTUACIONES</h3>
+                            <table id="puntuacionesGameOver">
+                                <thead><tr><th>Nombre</th><th>Puntos</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                         <div class="menu-buttons">
                             <button id="gameOverRestartButton" class="btn btn-primary">
                                 <span class="btn-icon"></span> VOLVER A JUGAR
@@ -170,6 +237,15 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+            <!-- Toast de logros (aparece sobre el juego) -->
+            <div id="achievementToast" class="achiev-toast hidden">
+                <span id="achievToastIcon" class="achiev-toast-icon">🎯</span>
+                <div class="achiev-toast-body">
+                    <span class="achiev-toast-label">¡LOGRO DESBLOQUEADO!</span>
+                    <span id="achievToastTitle" class="achiev-toast-title">Título</span>
+                    <span id="achievToastDesc"  class="achiev-toast-desc">Descripción</span>
                 </div>
             </div>
             <canvas id="canvas" width="600" height="650">TU NAVEGADOR NO SOPORTA HTML5!</canvas>

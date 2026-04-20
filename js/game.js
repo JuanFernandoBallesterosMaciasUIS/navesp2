@@ -74,9 +74,12 @@ var speedBoostTimeout = null;
 var originalPlayerSpeed = CONFIG.PLAYER_SPEED;
 
 var overlay, startContent, endContent, pauseContent, mainMenuContent, tutorialContent, optionsContent, gameOverContent, victoryContent;
+var especificacionesContent, mainMenuScoresPanel;
+var gameLeftPanel, gameScoresPanel, mainMenuLeftPanel;
+var logrosContent, logrosButton, backFromLogrosButton;
 var nameInput, startButton, restartButton, resumeButton, exitButton, finalText;
-var playButton, backButton, tutorialButton, optionsButton, quitButton;
-var backFromTutorialButton, backFromOptionsButton;
+var playButton, backButton, tutorialButton, optionsButton, quitButton, especificacionesButton;
+var backFromTutorialButton, backFromOptionsButton, backFromEspecificacionesButton;
 var gameOverRestartButton, gameOverMenuButton, victoryRestartButton, victoryMenuButton;
 var soundToggleBtn;  // Botón de control de sonido
 var finalAnimationTick = 0;
@@ -106,6 +109,29 @@ function preloadImages() {
     powerDisparoImage  = createImage('images/poderdisparo.png');
     powerVelocidadImage = createImage('images/podervelocidad.png');
 }
+
+/******************************* ESCALA DEL CANVAS ****************************/
+
+/**
+ * Escala el canvas para que ocupe el máximo espacio posible manteniendo
+ * la proporción original (canvas.width × canvas.height), sin distorsión.
+ * Usa CSS transform para no afectar las coordenadas internas del juego.
+ */
+function scaleCanvas() {
+    if (!canvas) { return; }
+    var availableWidth = window.innerWidth - 2 * CONFIG.MIN_PANEL_WIDTH;
+    var scaleX = availableWidth / canvas.width;
+    var scaleY = window.innerHeight / canvas.height;
+    var scale  = Math.min(scaleX, scaleY);
+    canvas.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
+    var panelWidth = Math.floor((window.innerWidth - canvas.width * scale) / 2);
+    var panels = [gameLeftPanel, gameScoresPanel, mainMenuLeftPanel, mainMenuScoresPanel];
+    for (var i = 0; i < panels.length; i++) {
+        if (panels[i]) { panels[i].style.width = panelWidth + 'px'; }
+    }
+}
+
+/******************************* AUDIO DE FONDO ********************************/
 
 /**
  * Crea e inicializa el sonido de fondo.
@@ -165,6 +191,8 @@ function init() {
     canvas = document.getElementById('canvas');
     ctx = canvas.getContext('2d');
 
+    window.addEventListener('resize', scaleCanvas);
+
     buffer = document.createElement('canvas');
     buffer.width  = canvas.width;
     buffer.height = canvas.height;
@@ -177,7 +205,15 @@ function init() {
     mainMenuContent = document.getElementById('mainMenuContent');
     tutorialContent = document.getElementById('tutorialContent');
     optionsContent  = document.getElementById('optionsContent');
+    especificacionesContent = document.getElementById('especificacionesContent');
+    logrosContent       = document.getElementById('logrosContent');
+    mainMenuScoresPanel = document.getElementById('mainMenuScoresPanel');
+    gameLeftPanel   = document.getElementById('gameLeftPanel');
+    gameScoresPanel = document.getElementById('gameScoresPanel');
+    mainMenuLeftPanel = document.getElementById('mainMenuLeftPanel');
     gameOverContent = document.getElementById('gameOverContent');
+
+    scaleCanvas();
     victoryContent = document.getElementById('victoryContent');
     nameInput     = document.getElementById('playerName');
     startButton   = document.getElementById('startButton');
@@ -192,6 +228,10 @@ function init() {
     quitButton    = document.getElementById('quitButton');
     backFromTutorialButton = document.getElementById('backFromTutorialButton');
     backFromOptionsButton = document.getElementById('backFromOptionsButton');
+    especificacionesButton = document.getElementById('especificacionesButton');
+    backFromEspecificacionesButton = document.getElementById('backFromEspecificacionesButton');
+    logrosButton         = document.getElementById('logrosButton');
+    backFromLogrosButton = document.getElementById('backFromLogrosButton');
     gameOverRestartButton = document.getElementById('gameOverRestartButton');
     gameOverMenuButton = document.getElementById('gameOverMenuButton');
     victoryRestartButton = document.getElementById('victoryRestartButton');
@@ -221,13 +261,25 @@ function init() {
     addListener(optionsButton, 'click', function() {
         showOverlay('options');
     });
+    addListener(especificacionesButton, 'click', function() {
+        showOverlay('especificaciones');
+    });
     addListener(quitButton, 'click', function() {
         alert('¡Gracias por jugar!');
     });
     addListener(backFromTutorialButton, 'click', function() {
-        showOverlay('mainMenu');
+        showOverlay('start');
     });
     addListener(backFromOptionsButton, 'click', function() {
+        showOverlay('mainMenu');
+    });
+    addListener(backFromEspecificacionesButton, 'click', function() {
+        showOverlay('options');
+    });
+    addListener(logrosButton, 'click', function() {
+        showOverlay('logros');
+    });
+    addListener(backFromLogrosButton, 'click', function() {
         showOverlay('mainMenu');
     });
     addListener(gameOverRestartButton, 'click', function() {
@@ -255,6 +307,7 @@ function init() {
         }
     });
 
+    loadAchievements();
     showOverlay('mainMenu');
 
     var lastTime = 0;
@@ -277,27 +330,39 @@ function showOverlay(type) {
     
     // Ocultar todos primero
     mainMenuContent.classList.add('hidden');
+    if (mainMenuScoresPanel) { mainMenuScoresPanel.classList.add('hidden'); }
     startContent.classList.add('hidden');
     endContent.classList.add('hidden');
     pauseContent.classList.add('hidden');
     tutorialContent.classList.add('hidden');
     optionsContent.classList.add('hidden');
+    especificacionesContent.classList.add('hidden');
+    if (logrosContent) { logrosContent.classList.add('hidden'); }
     gameOverContent.classList.add('hidden');
     victoryContent.classList.add('hidden');
     
     if (type === 'mainMenu') {
         mainMenuContent.classList.remove('hidden');
+        if (mainMenuScoresPanel) { mainMenuScoresPanel.classList.remove('hidden'); }
         gameStarted = false;
         gamePaused = false;
         stopBackgroundAudio();  // Detiene el sonido de fondo
     } else if (type === 'nameInput') {
         startContent.classList.remove('hidden');
+        if (mainMenuScoresPanel) { mainMenuScoresPanel.classList.remove('hidden'); }
         nameInput.value = playerName || '';
         nameInput.focus();
     } else if (type === 'tutorial') {
         tutorialContent.classList.remove('hidden');
     } else if (type === 'options') {
         optionsContent.classList.remove('hidden');
+    } else if (type === 'especificaciones') {
+        especificacionesContent.classList.remove('hidden');
+    } else if (type === 'logros') {
+        if (logrosContent) {
+            logrosContent.classList.remove('hidden');
+            renderAchievementsMenu();
+        }
     } else if (type === 'end') {
         endContent.classList.remove('hidden');
     } else if (type === 'pause') {
@@ -352,6 +417,7 @@ function togglePause() {
  */
 function startGame() {
     playerName = sanitizeName(nameInput.value);
+    resetSessionStats();
     resetGameState();
     hideOverlay();
     gameStarted = true;
@@ -439,6 +505,7 @@ function spawnNextEvil() {
  * reinicia contadores y crea el primer enemigo del nuevo nivel.
  */
 function startNextLevel() {
+    var livesBeforeTransition = player ? player.life : 0;
     currentLevel++;
     evilCounter = 1;
     playerShotsBuffer = [];
@@ -452,6 +519,7 @@ function startNextLevel() {
     applyLevelConfiguration(currentLevel);
     player.speed = playerSpeed;  // Restaurar velocidad original del nuevo nivel
     originalPlayerSpeed = playerSpeed;  // Actualizar velocidad original para el nuevo nivel
+    onLevelChanged(currentLevel, livesBeforeTransition);
     // Mostrar notificación del nivel
     showLevelTransition();
     createNewEvil();
@@ -469,6 +537,7 @@ function showLevelTransition() {
 
 /** Guarda la puntuación, activa la animación de victoria y programa el overlay final. */
 function startVictorySequence() {
+    onVictory(player ? player.life : 0);
     saveFinalScore();
     congratulations = true;
     finalText.textContent = '¡ENHORABUENA, ' + playerName + '! Has ganado.';
@@ -525,6 +594,7 @@ function checkCollisions(shot) {
             player.score += evil.pointsToKill;
             // Crear poder aleatorio al matar un enemigo
             createRandomPower(evil.posX + evil.image.width / 2, evil.posY);
+            onEnemyKilled();
         }
         shot.deleteShot(parseInt(shot.identifier));
         return false;
@@ -739,6 +809,7 @@ function update(dt) {
 
     if (isEvilHittingPlayer()) {
         player.killPlayer();
+        onPlayerDamaged();
     } else {
         for (var i = 0; i < evilShotsBuffer.length; i++) {
             updateEvilShot(evilShotsBuffer[i], i, dt);
@@ -784,11 +855,17 @@ function drawEnemyLifeBar() {
 }
 
 function showLifeAndScore() {
+    // Actualizar puntuación en el panel DOM
+    var scoreEl = document.getElementById('currentScoreDisplay');
+    if (scoreEl) { scoreEl.textContent = player.score; }
+
+    bufferctx.textAlign = 'right';
     bufferctx.fillStyle = '#90EE90';
     bufferctx.font = 'bold 16px Arial';
-    bufferctx.fillText('Puntos: ' + player.score, canvas.width - 100, 20);
+    bufferctx.fillText('Puntos: ' + player.score, canvas.width - 5, 20);
     
     // Mostrar nivel
+    bufferctx.textAlign = 'left';
     bufferctx.fillStyle = '#FFD700';
     bufferctx.font = 'bold 14px Arial';
     bufferctx.fillText('Nivel ' + currentLevel, 10, 20);
@@ -800,6 +877,7 @@ function showLifeAndScore() {
     bufferctx.fillText(enemyText, 10, 40);
     
     // Dibujar corazones rojos en lugar de número de vidas
+    bufferctx.textAlign = 'right';
     bufferctx.fillStyle = '#FF0000';
     bufferctx.font = 'bold 24px Arial';
     var hearts = '';
@@ -821,6 +899,7 @@ function showLifeAndScore() {
         bufferctx.font = 'bold 14px Arial';
         bufferctx.fillText('⚡ Velocidad Activa', 10, yOffset);
     }
+    bufferctx.textAlign = 'left';
 }
 
 /** Muestra la pantalla de derrota mediante el overlay. */
@@ -894,8 +973,7 @@ function updateEvilShot(shot, id, dt) {
                 shot.deleteShot(parseInt(shot.identifier));
             }
         } else {
-            player.killPlayer();
-        }
+            player.killPlayer();            onPlayerDamaged();        }
     }
 }
 

@@ -83,16 +83,13 @@ function getAllScores() {
 }
 
 /**
- * Renderiza la tabla de mejores puntuaciones en el DOM (#puntuaciones tbody).
- * Limpia y reconstruye las filas con medallas para los 3 primeros puestos.
+ * Rellena una tabla de puntuaciones a partir de sus claves ordenadas.
+ * @param {HTMLElement} tbody - El elemento tbody a rellenar.
+ * @param {string[]} bestScores - Claves ordenadas del localStorage.
  */
-function showBestScores() {
-    var bestScores = getBestScoreKeys();
-    var bestScoresBody = document.querySelector('#puntuaciones tbody');
-    if (!bestScoresBody) {
-        return;
-    }
-    bestScoresBody.innerHTML = '';
+function renderScoresTable(tbody, bestScores) {
+    if (!tbody) { return; }
+    tbody.innerHTML = '';
     for (var i = 0; i < bestScores.length; i++) {
         var record;
         try {
@@ -105,26 +102,31 @@ function showBestScores() {
             record = { name: 'Jugador', score: isNaN(fallbackScore) ? 0 : fallbackScore };
         }
         var row = document.createElement('tr');
-        if (i === 0) {
-            row.className = 'podium-1';
-        } else if (i === 1) {
-            row.className = 'podium-2';
-        } else if (i === 2) {
-            row.className = 'podium-3';
-        }
+        if (i === 0) { row.className = 'podium-1'; }
+        else if (i === 1) { row.className = 'podium-2'; }
+        else if (i === 2) { row.className = 'podium-3'; }
         var medal = '';
-        if (i === 0) {
-            medal = '🥇 ';
-        } else if (i === 1) {
-            medal = '🥈 ';
-        } else if (i === 2) {
+        if (i === 0) { medal = '🥇 '; }
+        else if (i === 1) { medal = '🥈 '; }
+        else if (i === 2) {
             medal = '🥉 ';
         }
         row.appendChild(createCell(record.name));
         row.children[0].textContent = medal + row.children[0].textContent;
         row.appendChild(createCell(record.score));
-        bestScoresBody.appendChild(row);
+        tbody.appendChild(row);
     }
+}
+
+/**
+ * Renderiza las tablas de mejores puntuaciones (#puntuaciones y #puntuacionesGameOver).
+ * Limpia y reconstruye las filas con medallas para los 3 primeros puestos.
+ */
+function showBestScores() {
+    var bestScores = getBestScoreKeys();
+    renderScoresTable(document.querySelector('#puntuaciones tbody'), bestScores);
+    renderScoresTable(document.querySelector('#puntuacionesGameOver tbody'), bestScores);
+    renderScoresTable(document.querySelector('#puntuacionesGame tbody'), bestScores);
 }
 
 /**

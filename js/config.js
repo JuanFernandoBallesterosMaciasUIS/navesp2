@@ -32,6 +32,7 @@ var CONFIG = {
     // Puntuaciones
     TOP_SCORES_TO_SHOW: 5,
     SCORE_LIFE_BONUS: 5,          // puntos extra por vida restante al ganar
+    MIN_PANEL_WIDTH: 200,         // px mínimos reservados para cada panel lateral
     // Tiempos (ms)
     RESPAWN_DELAY: 500,           // ms antes de reanimar al jugador tras morir
     NEW_EVIL_MAX_DELAY: 3000,     // ms máximos de espera antes de crear nuevo enemigo
