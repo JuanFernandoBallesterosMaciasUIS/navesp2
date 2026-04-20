@@ -66,9 +66,11 @@ var now             = 0;
 var playerName      = '';
 
 var overlay, startContent, endContent, pauseContent, mainMenuContent, tutorialContent, optionsContent, gameOverContent, victoryContent;
+var especificacionesContent, mainMenuScoresPanel;
+var gameLeftPanel, gameScoresPanel, mainMenuLeftPanel;
 var nameInput, startButton, restartButton, resumeButton, exitButton, finalText;
-var playButton, backButton, tutorialButton, optionsButton, quitButton;
-var backFromTutorialButton, backFromOptionsButton;
+var playButton, backButton, tutorialButton, optionsButton, quitButton, especificacionesButton;
+var backFromTutorialButton, backFromOptionsButton, backFromEspecificacionesButton;
 var gameOverRestartButton, gameOverMenuButton, victoryRestartButton, victoryMenuButton;
 var pauseButton, restartLevelBtn, soundToggleBtn;  // Botones de control
 var finalAnimationTick = 0;
@@ -95,6 +97,29 @@ function preloadImages() {
     evilShotImage      = createImage('images/disparo_malo.png');
     playerKilledImage  = createImage('images/bueno_muerto.png');
 }
+
+/******************************* ESCALA DEL CANVAS ****************************/
+
+/**
+ * Escala el canvas para que ocupe el máximo espacio posible manteniendo
+ * la proporción original (canvas.width × canvas.height), sin distorsión.
+ * Usa CSS transform para no afectar las coordenadas internas del juego.
+ */
+function scaleCanvas() {
+    if (!canvas) { return; }
+    var availableWidth = window.innerWidth - 2 * CONFIG.MIN_PANEL_WIDTH;
+    var scaleX = availableWidth / canvas.width;
+    var scaleY = window.innerHeight / canvas.height;
+    var scale  = Math.min(scaleX, scaleY);
+    canvas.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
+    var panelWidth = Math.floor((window.innerWidth - canvas.width * scale) / 2);
+    var panels = [gameLeftPanel, gameScoresPanel, mainMenuLeftPanel, mainMenuScoresPanel];
+    for (var i = 0; i < panels.length; i++) {
+        if (panels[i]) { panels[i].style.width = panelWidth + 'px'; }
+    }
+}
+
+/******************************* AUDIO DE FONDO ********************************/
 
 /**
  * Crea e inicializa el sonido de fondo.
@@ -154,6 +179,8 @@ function init() {
     canvas = document.getElementById('canvas');
     ctx = canvas.getContext('2d');
 
+    window.addEventListener('resize', scaleCanvas);
+
     buffer = document.createElement('canvas');
     buffer.width  = canvas.width;
     buffer.height = canvas.height;
@@ -166,7 +193,14 @@ function init() {
     mainMenuContent = document.getElementById('mainMenuContent');
     tutorialContent = document.getElementById('tutorialContent');
     optionsContent  = document.getElementById('optionsContent');
+    especificacionesContent = document.getElementById('especificacionesContent');
+    mainMenuScoresPanel = document.getElementById('mainMenuScoresPanel');
+    gameLeftPanel   = document.getElementById('gameLeftPanel');
+    gameScoresPanel = document.getElementById('gameScoresPanel');
+    mainMenuLeftPanel = document.getElementById('mainMenuLeftPanel');
     gameOverContent = document.getElementById('gameOverContent');
+
+    scaleCanvas();
     victoryContent = document.getElementById('victoryContent');
     nameInput     = document.getElementById('playerName');
     startButton   = document.getElementById('startButton');
@@ -181,6 +215,8 @@ function init() {
     quitButton    = document.getElementById('quitButton');
     backFromTutorialButton = document.getElementById('backFromTutorialButton');
     backFromOptionsButton = document.getElementById('backFromOptionsButton');
+    especificacionesButton = document.getElementById('especificacionesButton');
+    backFromEspecificacionesButton = document.getElementById('backFromEspecificacionesButton');
     gameOverRestartButton = document.getElementById('gameOverRestartButton');
     gameOverMenuButton = document.getElementById('gameOverMenuButton');
     victoryRestartButton = document.getElementById('victoryRestartButton');
@@ -212,6 +248,9 @@ function init() {
     addListener(optionsButton, 'click', function() {
         showOverlay('options');
     });
+    addListener(especificacionesButton, 'click', function() {
+        showOverlay('especificaciones');
+    });
     addListener(quitButton, 'click', function() {
         alert('¡Gracias por jugar!');
     });
@@ -219,6 +258,9 @@ function init() {
         showOverlay('mainMenu');
     });
     addListener(backFromOptionsButton, 'click', function() {
+        showOverlay('mainMenu');
+    });
+    addListener(backFromEspecificacionesButton, 'click', function() {
         showOverlay('mainMenu');
     });
     addListener(gameOverRestartButton, 'click', function() {
@@ -270,28 +312,34 @@ function showOverlay(type) {
     
     // Ocultar todos primero
     mainMenuContent.classList.add('hidden');
+    if (mainMenuScoresPanel) { mainMenuScoresPanel.classList.add('hidden'); }
     startContent.classList.add('hidden');
     endContent.classList.add('hidden');
     pauseContent.classList.add('hidden');
     tutorialContent.classList.add('hidden');
     optionsContent.classList.add('hidden');
+    especificacionesContent.classList.add('hidden');
     gameOverContent.classList.add('hidden');
     victoryContent.classList.add('hidden');
     
     if (type === 'mainMenu') {
         mainMenuContent.classList.remove('hidden');
+        if (mainMenuScoresPanel) { mainMenuScoresPanel.classList.remove('hidden'); }
         gameStarted = false;
         gamePaused = false;
         stopBackgroundAudio();  // Detiene el sonido de fondo
         updatePauseButtonLabel();
     } else if (type === 'nameInput') {
         startContent.classList.remove('hidden');
+        if (mainMenuScoresPanel) { mainMenuScoresPanel.classList.remove('hidden'); }
         nameInput.value = playerName || '';
         nameInput.focus();
     } else if (type === 'tutorial') {
         tutorialContent.classList.remove('hidden');
     } else if (type === 'options') {
         optionsContent.classList.remove('hidden');
+    } else if (type === 'especificaciones') {
+        especificacionesContent.classList.remove('hidden');
     } else if (type === 'end') {
         endContent.classList.remove('hidden');
     } else if (type === 'pause') {
