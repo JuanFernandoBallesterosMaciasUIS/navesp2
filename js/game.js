@@ -89,6 +89,8 @@ var finalAnimationTick = 0;
 var gameStarted = false;
 var gamePaused = false;
 var levelTransitionActive = false;  // Variable para controlar la transición de nivel
+var transitionStartTime = 0;  // Tiempo de inicio de la transición
+var transitionProgress = 0;   // Progreso de la transición (0 a 1)
 
 /******************************* CARGA DE IMÁGENES *******************************/
 
@@ -616,6 +618,8 @@ function startNextLevel() {
  */
 function showLevelTransition() {
     levelTransitionActive = true;
+    transitionStartTime = now;
+    transitionProgress = 0;
     setTimeout(function() {
         levelTransitionActive = false;
     }, CONFIG.LEVEL_TRANSITION_DELAY);
@@ -858,13 +862,8 @@ function update(dt) {
         return;
     }
     if (levelTransitionActive) {
-        // Durante la transición de nivel, mostrar el mensaje
-        bufferctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        bufferctx.fillRect(0, 0, canvas.width, canvas.height);
-        bufferctx.fillStyle = '#26b619';
-        bufferctx.font = 'bold 32px Arial';
-        var levelConfig = CONFIG.LEVELS[currentLevel];
-        bufferctx.fillText(levelConfig.name, canvas.width/2 - 150, canvas.height/2);
+        // Durante la transición de nivel, mostrar animación arcade
+        drawLevelTransitionEffect();
         return;
     }
     if (gamePaused) {
@@ -1156,6 +1155,280 @@ function drawSmallHeart(x, y) {
     bufferctx.bezierCurveTo(x, y - 60, x + 50, y - 60, x + 50, y - 30);
     bufferctx.bezierCurveTo(x + 50, y, x, y, x, y + 50);
     bufferctx.fill();
+}
+
+/**
+ * Dibuja la animación de transición de nivel arcade.
+ */
+function drawLevelTransitionEffect() {
+    // Calcular progreso de la transición (0 a 1)
+    var elapsed = now - transitionStartTime;
+    transitionProgress = Math.min(elapsed / (CONFIG.LEVEL_TRANSITION_DELAY - 500), 1);
+    
+    if (transitionProgress > 1) transitionProgress = 1;
+    
+    // Determinar qué animación mostrar según el nivel actual
+    if (currentLevel === 2) {
+        drawTransitionLevel1to2();
+    } else if (currentLevel === 3) {
+        drawTransitionLevel2to3();
+    } else if (currentLevel === 4) {
+        drawTransitionLevel3toBoss();
+    }
+}
+
+/**
+ * Transición Nivel 1 a 2: Escaneo de líneas tipo CRT arcade
+ */
+function drawTransitionLevel1to2() {
+    // Fondo oscuro
+    bufferctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    bufferctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Líneas de escaneo que bajan
+    bufferctx.strokeStyle = '#00FF00';
+    bufferctx.lineWidth = 3;
+    var scanlineY = -canvas.height + (transitionProgress * canvas.height * 2);
+    
+    for (var i = 0; i < 8; i++) {
+        var y = scanlineY + (i * canvas.height / 4);
+        if (y > 0 && y < canvas.height) {
+            bufferctx.beginPath();
+            bufferctx.moveTo(0, y);
+            bufferctx.lineTo(canvas.width, y);
+            bufferctx.stroke();
+        }
+    }
+    
+    // Efecto de distorsión pixelada
+    bufferctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+    for (var j = 0; j < 20; j++) {
+        var x = Math.random() * canvas.width;
+        var y = Math.random() * canvas.height;
+        var size = 10 + Math.random() * 20;
+        bufferctx.fillRect(x, y, size, size);
+    }
+    
+    // Texto del nivel con efecto 8-bit
+    bufferctx.fillStyle = '#00FF00';
+    bufferctx.font = 'bold 48px monospace';
+    bufferctx.globalAlpha = 0.5 + (transitionProgress * 0.5);
+    bufferctx.fillText('LEVEL 2', canvas.width/2 - 90, canvas.height/2 - 20);
+    bufferctx.font = 'bold 24px monospace';
+    bufferctx.fillText('¡LOS ENEMIGOS DESPIERTAN!', canvas.width/2 - 160, canvas.height/2 + 40);
+    bufferctx.globalAlpha = 1.0;
+}
+
+/**
+ * Transición Nivel 2 a 3: Líneas de velocidad convergentes
+ */
+function drawTransitionLevel2to3() {
+    // Fondo degradado negro a rojo oscuro
+    var gradient = bufferctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, '#1a0000');
+    gradient.addColorStop(0.5, '#000000');
+    gradient.addColorStop(1, '#3a0000');
+    bufferctx.fillStyle = gradient;
+    bufferctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    var centerX = canvas.width / 2;
+    var centerY = canvas.height / 2;
+    
+    // Pulsación central intensa
+    var pulseSize = 30 + (Math.sin(transitionProgress * Math.PI * 8) * 20);
+    bufferctx.fillStyle = 'rgba(255, 107, 0, 0.4)';
+    bufferctx.beginPath();
+    bufferctx.arc(centerX, centerY, pulseSize, 0, Math.PI * 2);
+    bufferctx.fill();
+    
+    // Líneas de energía radiales que se contraen
+    bufferctx.strokeStyle = '#FF6B00';
+    var lineCount = 32;
+    for (var i = 0; i < lineCount; i++) {
+        var angle = (i / lineCount) * Math.PI * 2 + transitionProgress * Math.PI;
+        var innerRadius = 10 + (1 - transitionProgress) * 150;
+        var outerRadius = 10 + (1 - transitionProgress) * 250;
+        
+        var x1 = centerX + Math.cos(angle) * innerRadius;
+        var y1 = centerY + Math.sin(angle) * innerRadius;
+        var x2 = centerX + Math.cos(angle) * outerRadius;
+        var y2 = centerY + Math.sin(angle) * outerRadius;
+        
+        bufferctx.lineWidth = 2;
+        bufferctx.beginPath();
+        bufferctx.moveTo(x1, y1);
+        bufferctx.lineTo(x2, y2);
+        bufferctx.stroke();
+    }
+    
+    // Círculos concéntricos pulsantes
+    var circleCount = 5;
+    for (var c = 0; c < circleCount; c++) {
+        var delay = c * 0.1;
+        var pulse = (transitionProgress + delay) % 1;
+        var radius = 30 + (pulse * 250);
+        var alpha = Math.max(0, 1 - pulse);
+        
+        bufferctx.strokeStyle = 'rgba(255, 107, 0, ' + alpha * 0.8 + ')';
+        bufferctx.lineWidth = 3;
+        bufferctx.beginPath();
+        bufferctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        bufferctx.stroke();
+    }
+    
+    // Barras de energía verticales en los costados
+    var barWidth = 8;
+    var barCount = 12;
+    for (var b = 0; b < barCount; b++) {
+        var barX = (b / barCount) * canvas.width;
+        var barHeight = 50 + (Math.sin(transitionProgress * Math.PI * 4 + b * 0.5) * 80);
+        bufferctx.fillStyle = 'rgba(255, 107, 0, 0.6)';
+        bufferctx.fillRect(barX, centerY - barHeight / 2, barWidth, barHeight);
+    }
+    
+    // Efecto de relámpago tipo arcade
+    if (transitionProgress > 0.3 && transitionProgress < 0.7) {
+        bufferctx.strokeStyle = 'rgba(255, 255, 100, 0.8)';
+        bufferctx.lineWidth = 4;
+        var lightningX = centerX + (Math.random() - 0.5) * 50;
+        bufferctx.beginPath();
+        bufferctx.moveTo(centerX - 100, centerY - 150);
+        bufferctx.lineTo(lightningX, centerY);
+        bufferctx.lineTo(centerX + 100, centerY + 150);
+        bufferctx.stroke();
+    }
+    
+    // Destello blanco pulsante
+    var flashIntensity = Math.sin(transitionProgress * Math.PI * 6) * 0.5 + 0.2;
+    bufferctx.fillStyle = 'rgba(255, 255, 255, ' + flashIntensity * 0.4 + ')';
+    bufferctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Texto del nivel con sombra dramática
+    bufferctx.font = 'bold 72px monospace';
+    bufferctx.globalAlpha = 0.3;
+    bufferctx.fillStyle = '#000000';
+    bufferctx.fillText('LEVEL 3', canvas.width/2 - 95, canvas.height/2 - 15);
+    
+    bufferctx.globalAlpha = 0.5 + (transitionProgress * 0.5);
+    bufferctx.fillStyle = '#FF6B00';
+    bufferctx.fillText('LEVEL 3', canvas.width/2 - 90, canvas.height/2 - 20);
+    
+    // Subtítulo con efecto de escritura
+    bufferctx.font = 'bold 28px monospace';
+    bufferctx.fillStyle = '#FFAA00';
+    var subtitleAlpha = Math.sin(transitionProgress * Math.PI * 3) * 0.3 + 0.4;
+    bufferctx.globalAlpha = subtitleAlpha;
+    bufferctx.fillText('⚡ PUNTO SIN RETORNO ⚡', canvas.width/2 - 200, canvas.height/2 + 60);
+    bufferctx.globalAlpha = 1.0;
+}
+
+/**
+ * Transición Nivel 3 a Jefe Final: Explosión épica tipo arcade
+ */
+function drawTransitionLevel3toBoss() {
+    // Fondo rojo degradado
+    var gradient = bufferctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, '#4a0000');
+    gradient.addColorStop(0.5, '#1a0000');
+    gradient.addColorStop(1, '#6a0000');
+    bufferctx.fillStyle = gradient;
+    bufferctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    var centerX = canvas.width / 2;
+    var centerY = canvas.height / 2;
+    
+    // Onda de choque expansiva (principal)
+    var shockWave = transitionProgress * 500;
+    bufferctx.strokeStyle = 'rgba(255, 0, 0, ' + (1 - transitionProgress) + ')';
+    bufferctx.lineWidth = 5;
+    bufferctx.beginPath();
+    bufferctx.arc(centerX, centerY, 20 + shockWave, 0, Math.PI * 2);
+    bufferctx.stroke();
+    
+    // Múltiples ondas de choque en cascada
+    for (var w = 1; w <= 4; w++) {
+        var delay = w * 0.15;
+        var waveProgress = Math.max(0, transitionProgress - delay);
+        var waveRadius = 20 + (waveProgress * 400);
+        var waveAlpha = Math.max(0, 1 - (waveProgress * 1.5));
+        
+        bufferctx.strokeStyle = 'rgba(255, ' + Math.floor(107 - w * 25) + ', 0, ' + waveAlpha * 0.7 + ')';
+        bufferctx.lineWidth = 4 - w * 0.5;
+        bufferctx.beginPath();
+        bufferctx.arc(centerX, centerY, waveRadius, 0, Math.PI * 2);
+        bufferctx.stroke();
+    }
+    
+    // Partículas de fuego/explosión más grandes y numerosas
+    var particleCount = 50;
+    for (var p = 0; p < particleCount; p++) {
+        var angle = (p / particleCount) * Math.PI * 2 + transitionProgress * Math.PI;
+        var distance = transitionProgress * 400 + Math.sin(p) * 50;
+        var px = centerX + Math.cos(angle) * distance;
+        var py = centerY + Math.sin(angle) * distance;
+        
+        var particleSize = 5 + (Math.sin(p * 0.3) * 8);
+        var particleAlpha = 1 - transitionProgress;
+        
+        bufferctx.fillStyle = 'rgba(255, ' + Math.floor(100 + Math.sin(p) * 155) + ', 0, ' + particleAlpha + ')';
+        bufferctx.fillRect(px - particleSize / 2, py - particleSize / 2, particleSize, particleSize);
+    }
+    
+    // Rayos de fuego en líneas desde el centro
+    bufferctx.strokeStyle = 'rgba(255, 200, 0, 0.6)';
+    bufferctx.lineWidth = 3;
+    var rayCount = 16;
+    for (var r = 0; r < rayCount; r++) {
+        var rayAngle = (r / rayCount) * Math.PI * 2;
+        var rayLength = transitionProgress * 350;
+        var rayEndX = centerX + Math.cos(rayAngle) * rayLength;
+        var rayEndY = centerY + Math.sin(rayAngle) * rayLength;
+        
+        bufferctx.beginPath();
+        bufferctx.moveTo(centerX, centerY);
+        bufferctx.lineTo(rayEndX, rayEndY);
+        bufferctx.stroke();
+    }
+    
+    // Destello nuclear
+    var flashSize = Math.max(0, transitionProgress - 0.2);
+    bufferctx.fillStyle = 'rgba(255, 255, 100, ' + (1 - flashSize) * 0.5 + ')';
+    bufferctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Efecto de vibración/distorsión
+    if (transitionProgress < 0.8) {
+        var vibration = Math.sin(transitionProgress * Math.PI * 20) * 3;
+        bufferctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        bufferctx.lineWidth = 2;
+        bufferctx.strokeRect(vibration, vibration, canvas.width - vibration * 2, canvas.height - vibration * 2);
+    }
+    
+    // Texto del jefe con efecto épico
+    var bossTextAlpha = Math.max(0, transitionProgress - 0.25) / 0.75;
+    
+    // Sombra del texto
+    bufferctx.font = 'bold 80px monospace';
+    bufferctx.globalAlpha = bossTextAlpha * 0.4;
+    bufferctx.fillStyle = '#000000';
+    bufferctx.fillText('⚔ JEFE ⚔', centerX - 140, centerY - 25);
+    
+    // Texto principal rojo
+    bufferctx.globalAlpha = bossTextAlpha * 0.8;
+    bufferctx.fillStyle = '#FF0000';
+    bufferctx.fillText('⚔ JEFE ⚔', centerX - 135, centerY - 30);
+    
+    // Efecto de brillo dorado
+    bufferctx.globalAlpha = bossTextAlpha * 0.5;
+    bufferctx.fillStyle = '#FFFF00';
+    bufferctx.fillText('⚔ JEFE ⚔', centerX - 130, centerY - 35);
+    
+    // Subtítulo dramático
+    bufferctx.font = 'bold 32px monospace';
+    bufferctx.globalAlpha = bossTextAlpha;
+    bufferctx.fillStyle = '#FFAA00';
+    bufferctx.fillText('¡ENFRENTA TU DESTINO!', centerX - 230, centerY + 80);
+    
+    bufferctx.globalAlpha = 1.0;
 }
 
 /**
