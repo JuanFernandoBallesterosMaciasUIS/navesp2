@@ -45,7 +45,7 @@ var totalBestScoresToShow = CONFIG.TOP_SCORES_TO_SHOW;
 var playerShotsBuffer = [];
 var evilShotsBuffer   = [];
 var powersBuffer      = [];    // Buffer para los poderes que caen
-var evilShotImage, playerShotImage, playerKilledImage, powerVidaImage, powerDisparoImage, powerVelocidadImage;
+var evilShotImage, playerShotImage, playerKilledImage, powerVidaImage, powerDisparoImage, powerEscudoImage;
 
 var evilImages  = { animation: [], killed: null };
 var bossImages  = { animation: [], killed: null };
@@ -70,8 +70,10 @@ var playerName      = '';
 // Control de efectos de poderes
 var doubleFireActive = false;
 var doubleFireTimeout = null;
-var speedBoostActive = false;
-var speedBoostTimeout = null;
+var shieldActive = false;
+var shieldTimeout = null;
+var lifeEffectActive = false;
+var lifeEffectTimeout = null;
 var originalPlayerSpeed = CONFIG.PLAYER_SPEED;
 
 var overlay, startContent, endContent, pauseContent, mainMenuContent, tutorialContent, optionsContent, gameOverContent, victoryContent;
@@ -108,7 +110,7 @@ function preloadImages() {
     playerKilledImage  = createImage('images/bueno_muerto.png');
     powerVidaImage     = createImage('images/podervida.png');
     powerDisparoImage  = createImage('images/poderdisparo.png');
-    powerVelocidadImage = createImage('images/podervelocidad.png');
+    powerEscudoImage   = createImage('images/poderescudo.png');
 }
 
 /******************************* ESCALA DEL CANVAS ****************************/
@@ -522,9 +524,11 @@ function resetGameState() {
     finalAnimationTick = 0;
     // Resetear efectos de poderes
     doubleFireActive = false;
-    speedBoostActive = false;
+    shieldActive = false;
+    lifeEffectActive = false;
     if (doubleFireTimeout) clearTimeout(doubleFireTimeout);
-    if (speedBoostTimeout) clearTimeout(speedBoostTimeout);
+    if (shieldTimeout) clearTimeout(shieldTimeout);
+    if (lifeEffectTimeout) clearTimeout(lifeEffectTimeout);
     applyLevelConfiguration(currentLevel);
     originalPlayerSpeed = playerSpeed;  // Actualizar velocidad original según el nivel
     player = new Player(playerLife, 0);
@@ -593,9 +597,11 @@ function startNextLevel() {
     powersBuffer = [];   // Limpiar poderes al cambiar de nivel
     // Resetear efectos de poderes
     doubleFireActive = false;
-    speedBoostActive = false;
+    shieldActive = false;
+    lifeEffectActive = false;
     if (doubleFireTimeout) clearTimeout(doubleFireTimeout);
-    if (speedBoostTimeout) clearTimeout(speedBoostTimeout);
+    if (shieldTimeout) clearTimeout(shieldTimeout);
+    if (lifeEffectTimeout) clearTimeout(lifeEffectTimeout);
     applyLevelConfiguration(currentLevel);
     player.speed = playerSpeed;  // Restaurar velocidad original del nuevo nivel
     originalPlayerSpeed = playerSpeed;  // Actualizar velocidad original para el nuevo nivel
@@ -690,7 +696,7 @@ function checkCollisions(shot) {
 function createRandomPower(x, y) {
     // 40% de probabilidad de crear un poder
     if (Math.random() < CONFIG.POWER_SPAWN_CHANCE) {
-        var types = ['vida', 'dobleDisparo', 'velocidad'];
+        var types = ['vida', 'dobleDisparo', 'escudo'];
         var randomType = types[Math.floor(Math.random() * types.length)];
         
         // Crear objeto poder sin usar clase
@@ -702,11 +708,11 @@ function createRandomPower(x, y) {
             height: 40,
             speed: 2,
             color: (randomType === 'vida') ? '#FF6B6B' : 
-                   (randomType === 'dobleDisparo') ? '#FFD93D' : '#6BCB77',
+                   (randomType === 'dobleDisparo') ? '#FFD93D' : '#4ECDC4',
             emoji: (randomType === 'vida') ? '❤️' : 
-                   (randomType === 'dobleDisparo') ? '🔫' : '⚡',
+                   (randomType === 'dobleDisparo') ? '🔫' : '🛡️',
             image: (randomType === 'vida') ? powerVidaImage : 
-                   (randomType === 'dobleDisparo') ? powerDisparoImage : powerVelocidadImage
+                   (randomType === 'dobleDisparo') ? powerDisparoImage : powerEscudoImage
         };
         
         powersBuffer.push(power);
@@ -746,10 +752,18 @@ function applyPowerEffect(power) {
             if (player.life < CONFIG.POWER_MAX_LIVES) {
                 player.life++;
             }
+            // Mostrar efecto de vida durante 2 segundos
+            if (lifeEffectTimeout) {
+                clearTimeout(lifeEffectTimeout);
+            }
+            lifeEffectActive = true;
+            lifeEffectTimeout = setTimeout(function() {
+                lifeEffectActive = false;
+            }, 2000);  // 2 segundos
             break;
         
         case 'dobleDisparo':
-            // Activa disparo doble por 5 segundos
+            // Activa disparo doble por 10 segundos
             if (doubleFireTimeout) {
                 clearTimeout(doubleFireTimeout);
             }
@@ -759,16 +773,14 @@ function applyPowerEffect(power) {
             }, CONFIG.POWER_DURATION);
             break;
         
-        case 'velocidad':
-            // Aumenta velocidad por 5 segundos
-            if (speedBoostTimeout) {
-                clearTimeout(speedBoostTimeout);
+        case 'escudo':
+            // Activa escudo por 10 segundos (jugador invulnerable)
+            if (shieldTimeout) {
+                clearTimeout(shieldTimeout);
             }
-            player.speed = originalPlayerSpeed * 2.0;
-            speedBoostActive = true;
-            speedBoostTimeout = setTimeout(function() {
-                player.speed = originalPlayerSpeed;
-                speedBoostActive = false;
+            shieldActive = true;
+            shieldTimeout = setTimeout(function() {
+                shieldActive = false;
             }, CONFIG.POWER_DURATION);
             break;
     }
@@ -857,6 +869,9 @@ function update(dt) {
     }
     if (gamePaused) {
         bufferctx.drawImage(player, player.posX, player.posY);
+        if (lifeEffectActive) drawLifeEffect();
+        if (doubleFireActive) drawDoubleFirEffect();
+        if (shieldActive) drawShieldEffect();
         bufferctx.drawImage(evil.image, evil.posX, evil.posY);
         drawEnemyLifeBar();
         showLifeAndScore();
@@ -872,6 +887,9 @@ function update(dt) {
     }
 
     bufferctx.drawImage(player, player.posX, player.posY);
+    if (lifeEffectActive) drawLifeEffect();
+    if (doubleFireActive) drawDoubleFirEffect();
+    if (shieldActive) drawShieldEffect();
     bufferctx.drawImage(evil.image, evil.posX, evil.posY);
     drawEnemyLifeBar();
 
@@ -974,12 +992,212 @@ function showLifeAndScore() {
         bufferctx.fillText('🔫 Disparo Doble Activo', 10, yOffset);
         yOffset += 20;
     }
-    if (speedBoostActive) {
-        bufferctx.fillStyle = '#6BCB77';
+    if (shieldActive) {
+        bufferctx.fillStyle = '#4ECDC4';
         bufferctx.font = 'bold 14px Arial';
-        bufferctx.fillText('⚡ Velocidad Activa', 10, yOffset);
+        bufferctx.fillText('🛡️ Escudo Activo', 10, yOffset);
     }
     bufferctx.textAlign = 'left';
+}
+
+/**
+ * Dibuja cañones laterales estilo arcade cuando el jugador tiene doble disparo activo.
+ */
+function drawDoubleFirEffect() {
+    var cannonColor = '#FFD93D';  // Amarillo para los cañones
+    var glowColor = '#FFFF00';   // Amarillo brillante para el brillo
+    var playerCenterX = player.posX + player.width / 2;
+    var playerCenterY = player.posY + player.height / 2;
+    
+    // Efecto pulsante: brillo de los cañones
+    var pulseValue = (Math.sin(now * 8) + 1) / 2;  // Oscila entre 0 y 1
+    bufferctx.globalAlpha = 0.6 + (pulseValue * 0.4);  // Oscila entre 0.6 y 1.0
+    
+    // CAÑÓN IZQUIERDO
+    var leftCannonX = player.posX + 8;
+    var leftCannonY = player.posY + 20;
+    
+    // Base del cañón (rectángulo redondeado)
+    bufferctx.fillStyle = cannonColor;
+    bufferctx.beginPath();
+    bufferctx.moveTo(leftCannonX + 3, leftCannonY);
+    bufferctx.lineTo(leftCannonX + 12, leftCannonY);
+    bufferctx.quadraticCurveTo(leftCannonX + 14, leftCannonY + 2, leftCannonX + 14, leftCannonY + 6);
+    bufferctx.lineTo(leftCannonX + 14, leftCannonY + 20);
+    bufferctx.quadraticCurveTo(leftCannonX + 12, leftCannonY + 22, leftCannonX + 8, leftCannonY + 22);
+    bufferctx.lineTo(leftCannonX + 2, leftCannonY + 22);
+    bufferctx.quadraticCurveTo(leftCannonX, leftCannonY + 20, leftCannonX, leftCannonY + 16);
+    bufferctx.lineTo(leftCannonX, leftCannonY + 6);
+    bufferctx.quadraticCurveTo(leftCannonX, leftCannonY + 2, leftCannonX + 3, leftCannonY);
+    bufferctx.fill();
+    
+    // Tubo del cañón (más largo)
+    bufferctx.fillStyle = cannonColor;
+    bufferctx.fillRect(leftCannonX + 3, leftCannonY - 8, 8, 10);
+    
+    // Punta del cañón izquierdo (triángulo)
+    bufferctx.fillStyle = glowColor;
+    bufferctx.beginPath();
+    bufferctx.moveTo(leftCannonX + 5, leftCannonY - 8);
+    bufferctx.lineTo(leftCannonX + 11, leftCannonY - 8);
+    bufferctx.lineTo(leftCannonX + 8, leftCannonY - 14);
+    bufferctx.fill();
+    
+    // Destello en la punta
+    bufferctx.fillStyle = 'rgba(255, 255, 255, ' + (0.4 + pulseValue * 0.6) + ')';
+    bufferctx.beginPath();
+    bufferctx.arc(leftCannonX + 8, leftCannonY - 12, 2, 0, Math.PI * 2);
+    bufferctx.fill();
+    
+    // CAÑÓN DERECHO
+    var rightCannonX = player.posX + player.width - 14;
+    var rightCannonY = player.posY + 20;
+    
+    // Base del cañón (rectángulo redondeado)
+    bufferctx.fillStyle = cannonColor;
+    bufferctx.beginPath();
+    bufferctx.moveTo(rightCannonX + 2, rightCannonY);
+    bufferctx.lineTo(rightCannonX + 11, rightCannonY);
+    bufferctx.quadraticCurveTo(rightCannonX + 14, rightCannonY + 2, rightCannonX + 14, rightCannonY + 6);
+    bufferctx.lineTo(rightCannonX + 14, rightCannonY + 16);
+    bufferctx.quadraticCurveTo(rightCannonX + 14, rightCannonY + 20, rightCannonX + 11, rightCannonY + 22);
+    bufferctx.lineTo(rightCannonX + 3, rightCannonY + 22);
+    bufferctx.quadraticCurveTo(rightCannonX, rightCannonY + 20, rightCannonX, rightCannonY + 6);
+    bufferctx.quadraticCurveTo(rightCannonX, rightCannonY + 2, rightCannonX + 2, rightCannonY);
+    bufferctx.fill();
+    
+    // Tubo del cañón (más largo)
+    bufferctx.fillStyle = cannonColor;
+    bufferctx.fillRect(rightCannonX + 5, rightCannonY - 8, 8, 10);
+    
+    // Punta del cañón derecho (triángulo)
+    bufferctx.fillStyle = glowColor;
+    bufferctx.beginPath();
+    bufferctx.moveTo(rightCannonX + 3, rightCannonY - 8);
+    bufferctx.lineTo(rightCannonX + 9, rightCannonY - 8);
+    bufferctx.lineTo(rightCannonX + 6, rightCannonY - 14);
+    bufferctx.fill();
+    
+    // Destello en la punta
+    bufferctx.fillStyle = 'rgba(255, 255, 255, ' + (0.4 + pulseValue * 0.6) + ')';
+    bufferctx.beginPath();
+    bufferctx.arc(rightCannonX + 6, rightCannonY - 12, 2, 0, Math.PI * 2);
+    bufferctx.fill();
+    
+    // Aura amarilla alrededor del jugador
+    bufferctx.strokeStyle = 'rgba(255, 217, 61, 0.5)';
+    bufferctx.lineWidth = 2;
+    bufferctx.beginPath();
+    bufferctx.rect(player.posX - 5, player.posY - 5, player.width + 10, player.height + 10);
+    bufferctx.stroke();
+    
+    bufferctx.globalAlpha = 1.0;
+}
+
+/**
+ * Dibuja un efecto de vida estilo arcade cuando el jugador agarra el poder de vida.
+ */
+function drawLifeEffect() {
+    var lifeColor = '#FF6B6B';  // Rojo para vida
+    var glowColor = '#FF1744';  // Rojo más oscuro para el brillo
+    var playerCenterX = player.posX + player.width / 2;
+    var playerCenterY = player.posY + player.height / 2;
+    
+    // Efecto pulsante fuerte
+    var pulseValue = (Math.sin(now * 10) + 1) / 2;  // Oscila entre 0 y 1
+    var alpha = 0.4 + (pulseValue * 0.5);  // Oscila entre 0.4 y 0.9
+    
+    bufferctx.globalAlpha = alpha;
+    
+    // Aura roja pulsante alrededor del jugador
+    bufferctx.strokeStyle = lifeColor;
+    bufferctx.lineWidth = 3;
+    bufferctx.beginPath();
+    bufferctx.arc(playerCenterX, playerCenterY, 35 + pulseValue * 5, 0, Math.PI * 2);
+    bufferctx.stroke();
+    
+    // Segunda aura con fase desfasada
+    bufferctx.strokeStyle = glowColor;
+    bufferctx.lineWidth = 2;
+    bufferctx.globalAlpha = alpha * 0.6;
+    bufferctx.beginPath();
+    bufferctx.arc(playerCenterX, playerCenterY, 28, 0, Math.PI * 2);
+    bufferctx.stroke();
+    
+    // Dibujar corazones decorativos alrededor del jugador
+    bufferctx.globalAlpha = alpha * 0.8;
+    bufferctx.fillStyle = lifeColor;
+    var heartCount = 4;
+    for (var i = 0; i < heartCount; i++) {
+        var angle = (i / heartCount) * Math.PI * 2 + now * 2;
+        var heartX = playerCenterX + Math.cos(angle) * 40;
+        var heartY = playerCenterY + Math.sin(angle) * 40;
+        
+        // Dibujar corazón pequeño
+        var scale = 0.015 + pulseValue * 0.005;
+        bufferctx.save();
+        bufferctx.translate(heartX, heartY);
+        bufferctx.scale(scale, scale);
+        drawSmallHeart(0, 0);
+        bufferctx.restore();
+    }
+    
+    bufferctx.globalAlpha = 1.0;
+}
+
+/**
+ * Dibuja un corazón pequeño en las coordenadas especificadas.
+ */
+function drawSmallHeart(x, y) {
+    bufferctx.beginPath();
+    bufferctx.moveTo(x, y + 50);
+    bufferctx.bezierCurveTo(x, y, x - 50, y, x - 50, y - 30);
+    bufferctx.bezierCurveTo(x - 50, y - 60, x, y - 60, x, y - 30);
+    bufferctx.bezierCurveTo(x, y - 60, x + 50, y - 60, x + 50, y - 30);
+    bufferctx.bezierCurveTo(x + 50, y, x, y, x, y + 50);
+    bufferctx.fill();
+}
+
+/**
+ * Dibuja un escudo estilo arcade cuando el jugador tiene el escudo activo.
+ */
+function drawShieldEffect() {
+    var shieldColor = '#4ECDC4';  // Azul claro del escudo
+    var playerCenterX = player.posX + player.width / 2;
+    var playerCenterY = player.posY + player.height / 2;
+    var shieldRadius = 45;
+    
+    // Efecto pulsante: varía la opacidad según el tiempo
+    var pulseValue = (Math.sin(now * 5) + 1) / 2;  // Oscila entre 0 y 1
+    var alpha = 0.3 + (pulseValue * 0.3);  // Oscila entre 0.3 y 0.6
+    
+    // Guardar el alpha actual
+    bufferctx.globalAlpha = alpha;
+    
+    // Dibujar circulo de escudo
+    bufferctx.strokeStyle = shieldColor;
+    bufferctx.lineWidth = 3;
+    bufferctx.beginPath();
+    bufferctx.arc(playerCenterX, playerCenterY, shieldRadius, 0, Math.PI * 2);
+    bufferctx.stroke();
+    
+    // Dibujar algunos "rayos" alrededor del escudo para efecto arcade
+    bufferctx.lineWidth = 2;
+    for (var i = 0; i < 8; i++) {
+        var angle = (i / 8) * Math.PI * 2;
+        var x1 = playerCenterX + Math.cos(angle) * shieldRadius;
+        var y1 = playerCenterY + Math.sin(angle) * shieldRadius;
+        var x2 = playerCenterX + Math.cos(angle) * (shieldRadius + 10);
+        var y2 = playerCenterY + Math.sin(angle) * (shieldRadius + 10);
+        
+        bufferctx.beginPath();
+        bufferctx.moveTo(x1, y1);
+        bufferctx.lineTo(x2, y2);
+        bufferctx.stroke();
+    }
+    
+    // Restaurar el alpha
+    bufferctx.globalAlpha = 1.0;
 }
 
 /** Muestra la pantalla de derrota mediante el overlay. */
@@ -1053,7 +1271,14 @@ function updateEvilShot(shot, id, dt) {
                 shot.deleteShot(parseInt(shot.identifier));
             }
         } else {
-            player.killPlayer();            onPlayerDamaged();        }
+            // Solo dañar al jugador si el escudo no está activo
+            if (!shieldActive) {
+                player.killPlayer();
+                onPlayerDamaged();
+            }
+            // Eliminar el disparo en ambos casos
+            shot.deleteShot(parseInt(shot.identifier));
+        }
     }
 }
 

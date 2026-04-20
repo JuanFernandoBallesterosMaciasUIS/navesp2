@@ -12,7 +12,8 @@
  *                  totalEvils, shotSpeed, playerSpeed, keyPressed,
  *                  nextPlayerShot, playerShotDelay, now, playerShot,
  *                  youLose, playerName, finalText, doubleFireActive, 
- *                  speedBoostActive, doubleFireTimeout, speedBoostTimeout)
+ *                  shieldActive, lifeEffectActive, doubleFireTimeout, 
+ *                  shieldTimeout, lifeEffectTimeout)
  *   - game.js    : funciones globales (verifyToCreateNewEvil, createNewEvil,
  *                  showOverlay)
  *   - scores.js  : saveFinalScore
@@ -260,9 +261,11 @@ function Player(life, score) {
             powersBuffer.splice(0, powersBuffer.length);  // Limpiar poderes al morir
             // Resetear efectos de poderes
             doubleFireActive = false;
-            speedBoostActive = false;
+            shieldActive = false;
+            lifeEffectActive = false;
             if (doubleFireTimeout) clearTimeout(doubleFireTimeout);
-            if (speedBoostTimeout) clearTimeout(speedBoostTimeout);
+            if (shieldTimeout) clearTimeout(shieldTimeout);
+            if (lifeEffectTimeout) clearTimeout(lifeEffectTimeout);
             this.src = playerKilledImage.src;
             createNewEvil();
             setTimeout(function () {
