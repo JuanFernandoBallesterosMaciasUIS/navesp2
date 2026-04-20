@@ -212,6 +212,31 @@ div.overlay-content {
     flex-direction: column;
 }
 
+.current-score-box {
+    text-align: center;
+    background: rgba(76, 175, 80, 0.15);
+    border: 1px solid rgba(76, 175, 80, 0.5);
+    border-radius: 8px;
+    padding: 12px 8px;
+    margin-bottom: 18px;
+}
+
+.current-score-label {
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #81c784;
+    margin: 0 0 6px 0;
+    text-transform: uppercase;
+}
+
+.current-score-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #ffeb3b;
+    margin: 0;
+    font-family: 'Courier New', monospace;
+}
+
 #puntuacionesGame {
     width: 100%;
     border-collapse: collapse;

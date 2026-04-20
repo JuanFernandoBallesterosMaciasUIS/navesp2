@@ -705,11 +705,17 @@ function drawEnemyLifeBar() {
 }
 
 function showLifeAndScore() {
+    // Actualizar puntuación en el panel DOM
+    var scoreEl = document.getElementById('currentScoreDisplay');
+    if (scoreEl) { scoreEl.textContent = player.score; }
+
+    bufferctx.textAlign = 'right';
     bufferctx.fillStyle = '#90EE90';
     bufferctx.font = 'bold 16px Arial';
-    bufferctx.fillText('Puntos: ' + player.score, canvas.width - 100, 20);
+    bufferctx.fillText('Puntos: ' + player.score, canvas.width - 5, 20);
     
     // Mostrar nivel
+    bufferctx.textAlign = 'left';
     bufferctx.fillStyle = '#FFD700';
     bufferctx.font = 'bold 14px Arial';
     bufferctx.fillText('Nivel ' + currentLevel, 10, 20);
@@ -721,13 +727,15 @@ function showLifeAndScore() {
     bufferctx.fillText(enemyText, 10, 40);
     
     // Dibujar corazones rojos en lugar de número de vidas
+    bufferctx.textAlign = 'right';
     bufferctx.fillStyle = '#FF0000';
     bufferctx.font = 'bold 24px Arial';
     var hearts = '';
     for (var i = 0; i < player.life; i++) {
         hearts += '\u2665 ';
     }
-    bufferctx.fillText(hearts, canvas.width - 100, 45);
+    bufferctx.fillText(hearts, canvas.width - 5, 45);
+    bufferctx.textAlign = 'left';
 }
 
 /** Muestra la pantalla de derrota mediante el overlay. */
