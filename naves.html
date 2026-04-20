@@ -3,6 +3,7 @@
 <head>
     
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Videojuego con Javascript y HTML5</title>
     <link type="text/css" rel="stylesheet" href="css/reset.css?20260410">
     <link type="text/css" rel="stylesheet" href="css/main.css?20260410">
@@ -15,42 +16,28 @@
 </head>
 <body onload="game.init()">
     <div class="contenedor">
-        <div class="izquierda">
-            <div class="logo-container">
-                <img src="images/logo.png" class="sidebar-logo" alt="Game Logo" />
-            </div>
-            <ul class="lista">
-                <li class="titulo">CONTROLES:</li>
-                <li class="izquierda">izquierda</li>
-                <li class="derecha">derecha</li>
-                <li class="espacio">disparar</li>
-            </ul>
-            <ul class="lista">
-                <li class="titulo">PROBADO CON:</li>
-                <li class="firefox">Mozilla Firefox 11</li>
-                <li class="chrome">Google Chrome 18</li>
-                <li class="safari">Safari 5.1</li>
-            </ul>
-            <ul class="lista">
-                <li class="titulo">OTROS:</li>
-                <li><span class="nav-placeholder">Tutorial</span></li>
-                <li><span class="nav-placeholder">Especificaciones del juego</span></li>
-            </ul>
-        </div>
-        <div class="derecha">
-            <h3 class="tituloPuntuaciones">MEJORES PUNTUACIONES</h3>
-            <table id="puntuaciones">
-                <thead>
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Puntos</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
         <div class="juego">
+            <div id="gameLeftPanel" class="game-left-panel">
+                <img src="images/imageizq.png" alt="" class="panel-left-img">
+            </div>
+            <div id="gameScoresPanel" class="game-scores-panel">
+                <h3 class="scores-title">🏆 MEJORES PUNTUACIONES</h3>
+                <table id="puntuacionesGame">
+                    <thead><tr><th>Nombre</th><th>Pts</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
             <div id="overlay" class="overlay">
+                <div id="mainMenuLeftPanel" class="main-menu-left-panel">
+                    <img src="images/imageizq.png" alt="" class="panel-left-img">
+                </div>
+                <div id="mainMenuScoresPanel" class="main-menu-scores-panel hidden">
+                    <h3 class="scores-title">🏆 MEJORES PUNTUACIONES</h3>
+                    <table id="puntuaciones">
+                        <thead><tr><th>Nombre</th><th>Puntos</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
                 <div class="overlay-content">
                     <div id="mainMenuContent" class="main-menu">
                         <div class="menu-logo">
@@ -64,6 +51,9 @@
                             </button>
                             <button id="tutorialButton" class="btn btn-secondary">
                                 <span class="btn-icon"></span> TUTORIAL
+                            </button>
+                            <button id="especificacionesButton" class="btn btn-secondary">
+                                <span class="btn-icon"></span> ESPECIFICACIONES
                             </button>
                             <button id="optionsButton" class="btn btn-secondary">
                                 <span class="btn-icon"></span> OPCIONES
@@ -116,6 +106,26 @@
                             <span class="btn-icon">◀</span> ATRÁS
                         </button>
                     </div>
+                    <div id="especificacionesContent" class="hidden">
+                        <h2>ESPECIFICACIONES</h2>
+                        <p style="color: #81c784; margin-bottom: 15px;">Información técnica del juego</p>
+                        <div style="text-align: left; font-size: 13px; line-height: 1.8; color: #ddd;">
+                            <strong style="color: #81c784;">Resolución:</strong> 600 × 650 px<br><br>
+                            <strong style="color: #81c784;">Probado con:</strong><br>
+                            <span style="margin-left: 10px;">🦊 Mozilla Firefox</span><br>
+                            <span style="margin-left: 10px;">🟡 Google Chrome</span><br>
+                            <span style="margin-left: 10px;">🧭 Safari</span><br><br>
+                            <strong style="color: #81c784;">Tecnologías:</strong><br>
+                            <span style="margin-left: 10px;">HTML5 Canvas, JavaScript, CSS3</span><br><br>
+                            <strong style="color: #81c784;">Controles:</strong><br>
+                            <span style="margin-left: 10px;">◀ ▶ Flechas — mover nave</span><br>
+                            <span style="margin-left: 10px;">Space — disparar</span><br>
+                            <span style="margin-left: 10px;">ESC — pausar</span>
+                        </div>
+                        <button id="backFromEspecificacionesButton" class="btn btn-secondary" style="margin-top: 20px;">
+                            <span class="btn-icon">◀</span> ATRÁS
+                        </button>
+                    </div>
                     <div id="endContent" class="hidden">
                         <p id="finalText"></p>
                         <div class="menu-buttons" style="margin-top: 20px;">
@@ -139,7 +149,14 @@
                     <div id="gameOverContent" class="hidden">
                         <h2 style="color: #ff6b6b; font-size: 48px; margin-bottom: 20px;"> GAME OVER 💀</h2>
                         <p style="font-size: 24px; color: #81c784; margin-bottom: 10px;">¡Inténtalo de nuevo!</p>
-                        <p style="font-size: 18px; color: #fff; margin-bottom: 30px;">Puntos: <span style="color: #ffeb3b;" id="gameOverScore">0</span></p>
+                        <p style="font-size: 18px; color: #fff; margin-bottom: 15px;">Puntos: <span style="color: #ffeb3b;" id="gameOverScore">0</span></p>
+                        <div class="menu-scores" style="margin-bottom: 20px;">
+                            <h3 class="scores-title">🏆 MEJORES PUNTUACIONES</h3>
+                            <table id="puntuacionesGameOver">
+                                <thead><tr><th>Nombre</th><th>Puntos</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                         <div class="menu-buttons">
                             <button id="gameOverRestartButton" class="btn btn-primary">
                                 <span class="btn-icon"></span> VOLVER A JUGAR
