@@ -506,8 +506,9 @@ function restartLevel() {
     now = 0;
     nextPlayerShot = 0;
     finalAnimationTick = 0;
-    var currentLife = player ? player.life : CONFIG.PLAYER_LIVES;
-    var currentScore = player ? player.score : 0;
+    currentLevel = 1;  // Reiniciar al nivel 1
+    var currentLife = CONFIG.PLAYER_LIVES;
+    var currentScore = 0;
     applyLevelConfiguration(currentLevel);
     evilCounter = 1;
     player = new Player(currentLife, currentScore);
