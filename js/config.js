@@ -26,7 +26,7 @@ var CONFIG = {
     EVIL_ANIMATION_FRAMES: 8,     // total de frames en la animación
     EVIL_OFFSCREEN_MARGIN: 15,    // px fuera de pantalla antes de considerar al enemigo "salido"
     // Jefe final
-    BOSS_LIFE: 12,
+    BOSS_LIFE: 6,
     BOSS_SHOTS: 30,
     BOSS_POINTS: 20,
     // Puntuaciones
@@ -46,23 +46,26 @@ var CONFIG = {
         1: {
             name: 'NIVEL 1',
             speedMultiplier: 0.7,
-            totalEnemies: 6,
+            totalEnemies: 2,
             baseLife: 3,
-            baseShots: 4
+            baseShots: 4,
+            trajectoryType: 'linear'  // Trayectoria lineal simple
         },
         2: {
             name: 'NIVEL 2',
             speedMultiplier: 1,
-            totalEnemies: 9,
+            totalEnemies: 2,
             baseLife: 4,
-            baseShots: 5
+            baseShots: 5,
+            trajectoryType: 'sinusoidal'  // Movimiento sinusoidal
         },
         3: {
             name: 'NIVEL 3',
             speedMultiplier: 1.1,
-            totalEnemies: 12,
+            totalEnemies: 2,
             baseLife: 5,
-            baseShots: 6
+            baseShots: 6,
+            trajectoryType: 'zigzag'  // Movimiento en zigzag
         },
         4: {
             name: 'JEFE FINAL',
@@ -70,8 +73,19 @@ var CONFIG = {
             totalEnemies: 1,
             baseLife: 6,
             baseShots: 7,
-            isBossLevel: true
+            isBossLevel: true,
+            trajectoryType: 'circular'  // Movimiento circular
         }
     },
-    LEVEL_TRANSITION_DELAY: 3000  // ms antes de mostrar el siguiente nivel
+    LEVEL_TRANSITION_DELAY: 3000,  // ms antes de mostrar el siguiente nivel
+    
+    // Configuración de Power-ups
+    POWERUP_TYPES: {
+        DOUBLE_SHOT: { name: 'double_shot', icon: '🔫', color: '#FF6B6B', label: 'Doble Disparo' },
+        FAST_SHOT: { name: 'fast_shot', icon: '⚡', color: '#FFD700', label: 'Disparo Rápido' },
+        FAST_MOVE: { name: 'fast_move', icon: '💨', color: '#00FF00', label: 'Movimiento Rápido' }
+    },
+    POWERUP_DURATION: 8000,        // ms que dura cada power-up
+    POWERUP_SIZE: 40,              // tamaño del power-up
+    POWERUP_FALL_SPEED: 2,         // velocidad de caída del power-up
 };

@@ -114,23 +114,64 @@ function Enemy(life, shots, enemyImages) {
         verifyToCreateNewEvil();
     };
 
+    this.trajectoryType = 'linear';
+    this.trajectoryTime = 0;
+    
     this.update = function (dt) {
         this.posY += this.goDownSpeed * dt * 60;
-        if (this.direction === 'D') {
-            if (this.posX <= this.maxX) {
-                this.posX += this.speed * dt * 60;
+        this.trajectoryTime += dt;
+        
+        // Aplicar trayectoria según el tipo
+        if (this.trajectoryType === 'linear') {
+            // Trayectoria lineal simple (nivel 1)
+            if (this.direction === 'D') {
+                if (this.posX <= this.maxX) {
+                    this.posX += this.speed * dt * 60;
+                } else {
+                    this.direction = 'I';
+                    this.posX -= this.speed * dt * 60;
+                }
             } else {
-                this.direction = 'I';
-                this.posX -= this.speed * dt * 60;
+                if (this.posX >= this.minX) {
+                    this.posX -= this.speed * dt * 60;
+                } else {
+                    this.direction = 'D';
+                    this.posX += this.speed * dt * 60;
+                }
             }
-        } else {
-            if (this.posX >= this.minX) {
-                this.posX -= this.speed * dt * 60;
+        } else if (this.trajectoryType === 'sinusoidal') {
+            // Trayectoria sinusoidal (nivel 2)
+            var centerX = (this.minX + this.maxX) / 2;
+            var amplitude = (this.maxX - this.minX) / 2;
+            var frequency = 2;
+            this.posX = centerX + Math.sin(this.trajectoryTime * frequency * Math.PI) * amplitude;
+        } else if (this.trajectoryType === 'zigzag') {
+            // Trayectoria en zigzag (nivel 3)
+            var zigzagSpeed = this.speed * 1.2;
+            if (this.direction === 'D') {
+                if (this.posX <= this.maxX) {
+                    this.posX += zigzagSpeed * dt * 60;
+                } else {
+                    this.direction = 'I';
+                    this.posX -= zigzagSpeed * dt * 60;
+                }
             } else {
-                this.direction = 'D';
-                this.posX += this.speed * dt * 60;
+                if (this.posX >= this.minX) {
+                    this.posX -= zigzagSpeed * dt * 60;
+                } else {
+                    this.direction = 'D';
+                    this.posX += zigzagSpeed * dt * 60;
+                }
             }
+        } else if (this.trajectoryType === 'circular') {
+            // Trayectoria circular (jefe final nivel 4)
+            var centerX = canvas.width / 2;
+            var radius = 100;
+            this.posX = centerX + Math.cos(this.trajectoryTime * Math.PI) * radius;
+            this.minX = centerX - radius;
+            this.maxX = centerX + radius;
         }
+        
         this.animation += dt * 60;
         if (this.animation > CONFIG.EVIL_ANIMATION_INTERVAL) {
             this.animation = 0;
