@@ -107,6 +107,15 @@ function Enemy(life, shots, enemyImages) {
     this.maxX = this.minX + desplazamientoHorizontal - 40;
     this.direction = 'D';
 
+    this.reappear = function() {
+        this.posY = -50; // Reinicia la posición vertical
+        this.posX = getRandomNumber(canvas.width - this.image.width); // Nueva posición horizontal aleatoria
+        var desplazamientoHorizontal = minHorizontalOffset +
+            getRandomNumber(maxHorizontalOffset - minHorizontalOffset);
+        this.minX = getRandomNumber(canvas.width - desplazamientoHorizontal);
+        this.maxX = this.minX + desplazamientoHorizontal - 40;
+    };
+
     this.kill = function() {
         this.dead = true;
         totalEvils--;

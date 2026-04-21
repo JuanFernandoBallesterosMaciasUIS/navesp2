@@ -46,7 +46,7 @@ var CONFIG = {
         1: {
             name: 'NIVEL 1',
             speedMultiplier: 0.7,
-            totalEnemies: 2,
+            totalEnemies: 6,
             baseLife: 3,
             baseShots: 4,
             trajectoryType: 'linear'  // Trayectoria lineal simple
@@ -54,7 +54,7 @@ var CONFIG = {
         2: {
             name: 'NIVEL 2',
             speedMultiplier: 1,
-            totalEnemies: 2,
+            totalEnemies: 9,
             baseLife: 4,
             baseShots: 5,
             trajectoryType: 'sinusoidal'  // Movimiento sinusoidal
@@ -62,7 +62,7 @@ var CONFIG = {
         3: {
             name: 'NIVEL 3',
             speedMultiplier: 1.1,
-            totalEnemies: 2,
+            totalEnemies: 12,
             baseLife: 5,
             baseShots: 6,
             trajectoryType: 'zigzag'  // Movimiento en zigzag
