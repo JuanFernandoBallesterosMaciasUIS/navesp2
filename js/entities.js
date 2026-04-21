@@ -109,6 +109,15 @@ function Enemy(life, shots, enemyImages) {
     this.maxX = this.minX + desplazamientoHorizontal - 40;
     this.direction = 'D';
 
+    this.reappear = function() {
+        this.posY = -50; // Reinicia la posición vertical
+        this.posX = getRandomNumber(canvas.width - this.image.width); // Nueva posición horizontal aleatoria
+        var desplazamientoHorizontal = minHorizontalOffset +
+            getRandomNumber(maxHorizontalOffset - minHorizontalOffset);
+        this.minX = getRandomNumber(canvas.width - desplazamientoHorizontal);
+        this.maxX = this.minX + desplazamientoHorizontal - 40;
+    };
+
     this.kill = function() {
         this.dead = true;
         totalEvils--;
@@ -152,6 +161,7 @@ function Enemy(life, shots, enemyImages) {
         if (evil.shots > 0 && !evil.dead) {
             var disparo = new EvilShot(evil.posX + (evil.image.width / 2) - 5, evil.posY + evil.image.height);
             disparo.add();
+            playSound('Sonidos/Disparo_1.mp3', 0.5);
             evil.shots--;
             setTimeout(function() {
                 shoot();
@@ -231,6 +241,7 @@ function Player(life, score) {
                 playerShot = new PlayerShot(player.posX + (player.width / 2) - 5, player.posY);
                 playerShot.add();
             }
+            playSound('Sonidos/Disparo_2.mp3', 0.6);
             now += playerShotDelay;
             nextPlayerShot = now + playerShotDelay;
         } else {
@@ -242,11 +253,13 @@ function Player(life, score) {
         if (player.dead) {
             return;
         }
+        // Aplicar modificador de velocidad si está ralentizado
+        var speedMultiplier = playerSlowed ? SLOWDOWN_MULTIPLIER : 1;
         if (keyPressed.left && player.posX > CONFIG.PLAYER_BOUNDARY_PADDING) {
-            player.posX -= player.speed * dt * 60;
+            player.posX -= player.speed * dt * 60 * speedMultiplier;
         }
         if (keyPressed.right && player.posX < (canvas.width - player.width - CONFIG.PLAYER_BOUNDARY_PADDING)) {
-            player.posX += player.speed * dt * 60;
+            player.posX += player.speed * dt * 60 * speedMultiplier;
         }
         if (keyPressed.fire) {
             shoot();
@@ -254,6 +267,7 @@ function Player(life, score) {
     };
 
     player.killPlayer = function() {
+        playSound('Sonidos/Perdida_vida.mp3', 0.8);
         if (this.life > 1) {
             this.dead = true;
             evilShotsBuffer.splice(0, evilShotsBuffer.length);

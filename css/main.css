@@ -846,3 +846,163 @@ div.overlay-content input:focus {
     color: #81c784;
     text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
+
+/* ===== DISEÑO RESPONSIVO ===== */
+/* NOTA: El ancho de los paneles laterales y el padding lateral del overlay
+   se controlan dinámicamente desde js/game.js → scaleCanvas(), para que el
+   card del menú siempre quede centrado en el hueco entre los paneles y
+   nunca se superponga a ellos. Aquí solo ajustamos tipografías y tamaños
+   del card para que quepa bien en pantallas pequeñas. */
+
+div.overlay {
+    box-sizing: border-box;
+}
+
+/* Tablets y pantallas medianas (≤ 900px) */
+@media (max-width: 900px) {
+    div.overlay-content {
+        padding: 28px 24px;
+        max-width: 440px;
+        max-height: 90vh;
+    }
+    .menu-title {
+        font-size: 28px;
+        letter-spacing: 2px;
+    }
+    div.overlay-content h2 {
+        font-size: 22px;
+    }
+    .logo-img {
+        max-width: 90px;
+    }
+    .menu-logo {
+        margin-bottom: 12px;
+    }
+    .menu-subtitle {
+        margin-bottom: 18px;
+    }
+    .header-controls {
+        left: auto;
+        right: 10px;
+        transform: none;
+    }
+}
+
+/* Móviles / pantallas pequeñas (≤ 720px):
+   El JS oculta los paneles laterales a este tamaño, así que el card puede
+   ocupar casi todo el ancho. */
+@media (max-width: 720px) {
+    div.overlay-content {
+        padding: 22px 18px;
+        width: 100%;
+        max-width: 95vw;
+        max-height: 94vh;
+        border-radius: 12px;
+    }
+    .menu-title {
+        font-size: 24px;
+        letter-spacing: 1.5px;
+    }
+    div.overlay-content h2 {
+        font-size: 20px;
+        margin-bottom: 12px;
+    }
+    .menu-subtitle {
+        font-size: 12px;
+        margin-bottom: 14px;
+    }
+    .logo-img {
+        max-width: 80px;
+    }
+    .menu-logo {
+        margin-bottom: 10px;
+    }
+    .menu-buttons {
+        gap: 10px;
+    }
+    div.overlay-content button {
+        padding: 12px 14px;
+        font-size: 14px;
+    }
+    div.overlay-content input {
+        padding: 10px;
+        font-size: 14px;
+        margin-bottom: 12px;
+    }
+    .btn-icon {
+        font-size: 15px;
+    }
+    /* Cuadrícula de especificaciones en una sola columna */
+    .specs-grid {
+        grid-template-columns: 1fr;
+        max-height: 55vh;
+    }
+    .specs-section:nth-child(3) {
+        grid-column: span 1;
+    }
+    .melody-btns-row {
+        flex-direction: column;
+    }
+    .melody-btn {
+        width: 100%;
+    }
+    .header-controls {
+        left: auto;
+        right: 8px;
+        bottom: 8px;
+        transform: none;
+        gap: 6px;
+        padding: 6px;
+    }
+    .control-btn {
+        padding: 8px 10px;
+        min-width: 40px;
+        min-height: 40px;
+    }
+    .control-btn.sound-btn {
+        width: 42px;
+        height: 42px;
+    }
+    .sound-icon {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+/* Móviles muy pequeños (≤ 400px) */
+@media (max-width: 400px) {
+    div.overlay-content {
+        padding: 18px 14px;
+    }
+    .menu-title {
+        font-size: 20px;
+    }
+    div.overlay-content h2 {
+        font-size: 18px;
+    }
+    .logo-img {
+        max-width: 70px;
+    }
+    div.overlay-content button {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+}
+
+/* Pantallas de baja altura: permitir scroll interno del overlay-content */
+@media (max-height: 600px) {
+    div.overlay-content {
+        max-height: 96vh;
+        padding-top: 20px;
+        padding-bottom: 20px;
+    }
+    .menu-logo {
+        margin-bottom: 8px;
+    }
+    .logo-img {
+        max-width: 70px;
+    }
+    .menu-subtitle {
+        margin-bottom: 12px;
+    }
+}

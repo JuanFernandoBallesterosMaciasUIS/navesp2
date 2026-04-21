@@ -92,6 +92,50 @@ var levelTransitionActive = false;  // Variable para controlar la transición de
 var transitionStartTime = 0;  // Tiempo de inicio de la transición
 var transitionProgress = 0;   // Progreso de la transición (0 a 1)
 
+// Variables para el efecto de penalización por enemigo escapado
+var playerSlowed = false;
+var slowedEndTime = 0;
+var SLOWDOWN_DURATION = 3000;  // Duración del efecto en milisegundos
+var SLOWDOWN_MULTIPLIER = 0.4;  // Velocidad reduce al 40%
+
+/**
+ * Aplica la penalización por enemigo escapado: lentitud, pantalla roja y sonido de alerta.
+ * Reduce la velocidad del jugador al 40% durante 3 segundos.
+ */
+function applySlowdownPenalty() {
+    if (!playerSlowed) {
+        playerSlowed = true;
+        slowedEndTime = Date.now() + SLOWDOWN_DURATION;
+        playSound('Sonidos/Alerta.mp3', 0.9);
+    }
+}
+
+/**
+ * Verifica si el efecto de lentitud ha terminado y restaura la velocidad.
+ */
+function updateSlowdownEffect() {
+    if (playerSlowed && Date.now() >= slowedEndTime) {
+        playerSlowed = false;
+    }
+}
+
+/**
+ * Dibuja un overlay rojo semi-transparente cuando el jugador está ralentizado.
+ */
+function drawSlowdownOverlay() {
+    if (playerSlowed) {
+        bufferctx.fillStyle = 'rgba(255, 0, 0, 0.15)';
+        bufferctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Texto de advertencia
+        bufferctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+        bufferctx.font = 'bold 20px Arial';
+        bufferctx.textAlign = 'center';
+        bufferctx.fillText('¡LENTO!', canvas.width / 2, 60);
+        bufferctx.textAlign = 'left';
+    }
+}
+
 /******************************* CARGA DE IMÁGENES *******************************/
 
 /**
@@ -124,15 +168,36 @@ function preloadImages() {
  */
 function scaleCanvas() {
     if (!canvas) { return; }
-    var availableWidth = window.innerWidth - 2 * CONFIG.MIN_PANEL_WIDTH;
+    // En pantallas pequeñas reservamos menos espacio para los paneles laterales
+    // para que el juego/menú puedan ocupar casi todo el ancho.
+    var isSmallScreen = window.innerWidth <= 720;
+    var minPanel = isSmallScreen ? 0 : CONFIG.MIN_PANEL_WIDTH;
+    var availableWidth = window.innerWidth - 2 * minPanel;
     var scaleX = availableWidth / canvas.width;
     var scaleY = window.innerHeight / canvas.height;
     var scale  = Math.min(scaleX, scaleY);
     canvas.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
     var panelWidth = Math.floor((window.innerWidth - canvas.width * scale) / 2);
+    if (panelWidth < 0) { panelWidth = 0; }
     var panels = [gameLeftPanel, gameScoresPanel, mainMenuLeftPanel, mainMenuScoresPanel];
     for (var i = 0; i < panels.length; i++) {
-        if (panels[i]) { panels[i].style.width = panelWidth + 'px'; }
+        if (!panels[i]) { continue; }
+        if (isSmallScreen) {
+            // Ocultar paneles en pantallas pequeñas para evitar superposiciones
+            panels[i].style.display = 'none';
+            panels[i].style.width = '0px';
+        } else {
+            panels[i].style.display = '';
+            panels[i].style.width = panelWidth + 'px';
+        }
+    }
+    // Ajusta el overlay para que su contenido se centre en el hueco entre paneles
+    // (no en el centro de toda la pantalla), evitando superposiciones.
+    if (overlay) {
+        var overlayPad = isSmallScreen ? 10 : panelWidth;
+        overlay.style.paddingLeft = overlayPad + 'px';
+        overlay.style.paddingRight = overlayPad + 'px';
+        overlay.style.boxSizing = 'border-box';
     }
 }
 
@@ -216,6 +281,35 @@ function stopBackgroundAudio() {
         backgroundAudioPaused = false;
         soundToggleBtn.style.opacity = '1';
     }
+}
+
+/**
+ * Obtiene la ruta de la música de fondo según el nivel.
+ * @param {number} levelNumber - Número del nivel (1, 2, 3, 4).
+ * @returns {string} Ruta del archivo de música.
+ */
+function getMusicTrackForLevel(levelNumber) {
+    switch(levelNumber) {
+        case 1: return 'Sonidos/Melodia_1.mp3';
+        case 2: return 'Sonidos/Melodia_2.mp3';
+        case 3: return 'Sonidos/Melodia_3.mp3';
+        case 4: return 'Sonidos/Melodia_1.mp3';  // O puedes usar otra música para el jefe
+        default: return 'Sonidos/Melodia_1.mp3';
+    }
+}
+
+/**
+ * Reproduce un sonido de efecto.
+ * @param {string} src - Ruta del archivo de sonido.
+ * @param {number} volume - Volumen (0-1).
+ */
+function playSound(src, volume) {
+    var sound = new Audio();
+    sound.src = src;
+    sound.volume = volume || 0.7;
+    sound.play().catch(function(err) {
+        // Silenciar errores de reproducción si el navegador no lo permite
+    });
 }
 
 /******************************* INICIALIZACIÓN *******************************/
@@ -482,9 +576,12 @@ function restartLevel() {
     now = 0;
     nextPlayerShot = 0;
     finalAnimationTick = 0;
-    var currentLife = player ? player.life : CONFIG.PLAYER_LIVES;
-    var currentScore = player ? player.score : 0;
+    currentLevel = 1;  // Reiniciar al nivel 1
+    var currentLife = CONFIG.PLAYER_LIVES;
+    var currentScore = 0;
     applyLevelConfiguration(currentLevel);
+    // Cambiar a la música del nivel 1
+    changeTrack(getMusicTrackForLevel(currentLevel));
     evilCounter = 1;
     player = new Player(currentLife, currentScore);
     createNewEvil();
@@ -502,7 +599,8 @@ function startGame() {
     resetGameState();
     hideOverlay();
     gameStarted = true;
-    initBackgroundAudio();  // Inicia el sonido de fondo
+    // Cambiar a la música del nivel 1
+    changeTrack(getMusicTrackForLevel(currentLevel));
     
     // Mostrar botones de control cuando inicia el juego
     document.querySelector('.header-controls').classList.remove('hidden');
@@ -607,6 +705,8 @@ function startNextLevel() {
     applyLevelConfiguration(currentLevel);
     player.speed = playerSpeed;  // Restaurar velocidad original del nuevo nivel
     originalPlayerSpeed = playerSpeed;  // Actualizar velocidad original para el nuevo nivel
+    // Cambiar la música al siguiente nivel
+    changeTrack(getMusicTrackForLevel(currentLevel));
     onLevelChanged(currentLevel, livesBeforeTransition);
     // Mostrar notificación del nivel
     showLevelTransition();
@@ -678,8 +778,14 @@ function isEvilHittingPlayer() {
 function checkCollisions(shot) {
     if (shot.isHittingEvil()) {
         if (evil.life > 1) {
+            playSound('Sonidos/Boom.mp3', 1);
             evil.life--;
         } else {
+            if (evil instanceof FinalBoss) {
+                playSound('Sonidos/Boom_nave_Final.mp3', 1);
+            } else {
+                playSound('Sonidos/Boom.mp3', 1);
+            }
             evil.kill();
             player.score += evil.pointsToKill;
             // Crear poder aleatorio al matar un enemigo
@@ -893,6 +999,7 @@ function update(dt) {
     drawEnemyLifeBar();
 
     updateEvil(dt);
+    updateSlowdownEffect();  // Actualizar efecto de lentitud
 
     // Actualizar y renderizar poderes
     for (var p = 0; p < powersBuffer.length; p++) {
@@ -914,6 +1021,7 @@ function update(dt) {
     }
 
     showLifeAndScore();
+    drawSlowdownOverlay();  // Dibujar overlay rojo si está ralentizado
     playerAction(dt);
 }
 
@@ -1496,13 +1604,14 @@ function drawBackground() {
 
 /**
  * Actualiza la posición y animación del enemigo activo.
- * Si sale de pantalla, lo elimina (llama evil.kill()).
+ * Si sale de pantalla, reaparece en la parte superior (llama evil.reappear()).
  */
 function updateEvil(dt) {
     if (!evil.dead) {
         evil.update(dt);
         if (evil.isOutOfScreen()) {
-            evil.kill();
+            applySlowdownPenalty();  // Aplicar penalización cuando el enemigo se escapa
+            evil.reappear();
         }
     }
 }
@@ -1546,6 +1655,7 @@ function updateEvilShot(shot, id, dt) {
         } else {
             // Solo dañar al jugador si el escudo no está activo
             if (!shieldActive) {
+                playSound('Sonidos/Perdida_vida.mp3', 0.8);
                 player.killPlayer();
                 onPlayerDamaged();
             }
