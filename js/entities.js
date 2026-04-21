@@ -254,6 +254,7 @@ function Player(life, score) {
     };
 
     player.killPlayer = function() {
+        playSound('Sonidos/Perdida_vida.mp3', 0.8);
         if (this.life > 1) {
             this.dead = true;
             evilShotsBuffer.splice(0, evilShotsBuffer.length);

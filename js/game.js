@@ -204,6 +204,21 @@ function stopBackgroundAudio() {
 }
 
 /**
+ * Obtiene la ruta de la música de fondo según el nivel.
+ * @param {number} levelNumber - Número del nivel (1, 2, 3, 4).
+ * @returns {string} Ruta del archivo de música.
+ */
+function getMusicTrackForLevel(levelNumber) {
+    switch(levelNumber) {
+        case 1: return 'Sonidos/Melodia_1.mp3';
+        case 2: return 'Sonidos/Melodia_2.mp3';
+        case 3: return 'Sonidos/Melodia_3.mp3';
+        case 4: return 'Sonidos/Melodia_1.mp3';  // O puedes usar otra música para el jefe
+        default: return 'Sonidos/Melodia_1.mp3';
+    }
+}
+
+/**
  * Reproduce un sonido de efecto.
  * @param {string} src - Ruta del archivo de sonido.
  * @param {number} volume - Volumen (0-1).
@@ -485,6 +500,8 @@ function restartLevel() {
     var currentLife = CONFIG.PLAYER_LIVES;
     var currentScore = 0;
     applyLevelConfiguration(currentLevel);
+    // Cambiar a la música del nivel 1
+    changeTrack(getMusicTrackForLevel(currentLevel));
     evilCounter = 1;
     player = new Player(currentLife, currentScore);
     createNewEvil();
@@ -502,7 +519,8 @@ function startGame() {
     resetGameState();
     hideOverlay();
     gameStarted = true;
-    initBackgroundAudio();  // Inicia el sonido de fondo
+    // Cambiar a la música del nivel 1
+    changeTrack(getMusicTrackForLevel(currentLevel));
     
     // Mostrar botones de control cuando inicia el juego
     document.querySelector('.header-controls').classList.remove('hidden');
@@ -588,6 +606,8 @@ function startNextLevel() {
     playerShotsBuffer = [];
     evilShotsBuffer = [];
     applyLevelConfiguration(currentLevel);
+    // Cambiar la música al siguiente nivel
+    changeTrack(getMusicTrackForLevel(currentLevel));
     onLevelChanged(currentLevel, livesBeforeTransition);
     // Mostrar notificación del nivel
     showLevelTransition();
