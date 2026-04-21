@@ -3,7 +3,7 @@
  *
  * Depende de:
  *   - config.js  : CONFIG
- *   - utils.js   : createImage, arrayRemove, getRandomNumber
+ *   - utils.js   : createImage, getRandomNumber
  *   - game.js    : estado global (canvas, evil, player, playerShotsBuffer,
  *                  evilShotsBuffer, playerShotImage, evilShotImage,
  *                  playerKilledImage, evilImages, bossImages, evilSpeed,
@@ -11,7 +11,9 @@
  *                  finalBossShots, minHorizontalOffset, maxHorizontalOffset,
  *                  totalEvils, shotSpeed, playerSpeed, keyPressed,
  *                  nextPlayerShot, playerShotDelay, now, playerShot,
- *                  youLose, playerName, finalText)
+ *                  youLose, playerName, finalText, doubleFireActive, 
+ *                  shieldActive, lifeEffectActive, doubleFireTimeout, 
+ *                  shieldTimeout, lifeEffectTimeout)
  *   - game.js    : funciones globales (verifyToCreateNewEvil, createNewEvil,
  *                  showOverlay)
  *   - scores.js  : saveFinalScore
@@ -243,8 +245,17 @@ function Player(life, score) {
             // real para que nextPlayerShot quede en el futuro correcto y no se
             // dispare una segunda bala inmediatamente en el siguiente frame.
             if (now === 0) { now = new Date().getTime(); }
-            playerShot = new PlayerShot(player.posX + (player.width / 2) - 5, player.posY);
-            playerShot.add();
+            if (doubleFireActive) {
+                // Disparar dos proyectiles a ambos lados
+                playerShot = new PlayerShot(player.posX + (player.width / 4) - 5, player.posY);
+                playerShot.add();
+                playerShot = new PlayerShot(player.posX + (3 * player.width / 4) - 5, player.posY);
+                playerShot.add();
+            } else {
+                // Disparo normal en el centro
+                playerShot = new PlayerShot(player.posX + (player.width / 2) - 5, player.posY);
+                playerShot.add();
+            }
             playSound('Sonidos/Disparo_2.mp3', 0.6);
             now += playerShotDelay;
             nextPlayerShot = now + playerShotDelay;
@@ -276,6 +287,14 @@ function Player(life, score) {
             this.dead = true;
             evilShotsBuffer.splice(0, evilShotsBuffer.length);
             playerShotsBuffer.splice(0, playerShotsBuffer.length);
+            powersBuffer.splice(0, powersBuffer.length);  // Limpiar poderes al morir
+            // Resetear efectos de poderes
+            doubleFireActive = false;
+            shieldActive = false;
+            lifeEffectActive = false;
+            if (doubleFireTimeout) clearTimeout(doubleFireTimeout);
+            if (shieldTimeout) clearTimeout(shieldTimeout);
+            if (lifeEffectTimeout) clearTimeout(lifeEffectTimeout);
             this.src = playerKilledImage.src;
             // Mantener al enemigo en su posición actual y reactivar sus disparos
             evil.restartShooting();

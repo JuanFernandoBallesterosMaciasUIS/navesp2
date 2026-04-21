@@ -44,7 +44,8 @@ var totalBestScoresToShow = CONFIG.TOP_SCORES_TO_SHOW;
 
 var playerShotsBuffer = [];
 var evilShotsBuffer   = [];
-var evilShotImage, playerShotImage, playerKilledImage;
+var powersBuffer      = [];    // Buffer para los poderes que caen
+var evilShotImage, playerShotImage, playerKilledImage, powerVidaImage, powerDisparoImage, powerEscudoImage;
 
 var evilImages  = { animation: [], killed: null };
 var bossImages  = { animation: [], killed: null };
@@ -66,6 +67,15 @@ var playerShotDelay = CONFIG.PLAYER_SHOT_DELAY;
 var now             = 0;
 var playerName      = '';
 
+// Control de efectos de poderes
+var doubleFireActive = false;
+var doubleFireTimeout = null;
+var shieldActive = false;
+var shieldTimeout = null;
+var lifeEffectActive = false;
+var lifeEffectTimeout = null;
+var originalPlayerSpeed = CONFIG.PLAYER_SPEED;
+
 var overlay, startContent, endContent, pauseContent, mainMenuContent, tutorialContent, optionsContent, gameOverContent, victoryContent;
 var especificacionesContent, mainMenuScoresPanel;
 var gameLeftPanel, gameScoresPanel, mainMenuLeftPanel;
@@ -79,6 +89,8 @@ var finalAnimationTick = 0;
 var gameStarted = false;
 var gamePaused = false;
 var levelTransitionActive = false;  // Variable para controlar la transición de nivel
+var transitionStartTime = 0;  // Tiempo de inicio de la transición
+var transitionProgress = 0;   // Progreso de la transición (0 a 1)
 
 // Variables para el efecto de penalización por enemigo escapado
 var playerSlowed = false;
@@ -142,6 +154,9 @@ function preloadImages() {
     playerShotImage    = createImage('images/disparo_bueno.png');
     evilShotImage      = createImage('images/disparo_malo.png');
     playerKilledImage  = createImage('images/bueno_muerto.png');
+    powerVidaImage     = createImage('images/podervida.png');
+    powerDisparoImage  = createImage('images/poderdisparo.png');
+    powerEscudoImage   = createImage('images/poderescudo.png');
 }
 
 /******************************* ESCALA DEL CANVAS ****************************/
@@ -439,6 +454,7 @@ function init() {
         if (!lastTime) lastTime = timestamp;
         var dt = Math.min((timestamp - lastTime) / 1000, 0.05);
         lastTime = timestamp;
+        now = timestamp;
         loop(dt);
         requestAnimFrame(anim);
     }
@@ -607,10 +623,19 @@ function resetGameState() {
     congratulations = false;
     playerShotsBuffer = [];
     evilShotsBuffer   = [];
+    powersBuffer      = [];    // Limpiar poderes
     now            = 0;
     nextPlayerShot = 0;
     finalAnimationTick = 0;
+    // Resetear efectos de poderes
+    doubleFireActive = false;
+    shieldActive = false;
+    lifeEffectActive = false;
+    if (doubleFireTimeout) clearTimeout(doubleFireTimeout);
+    if (shieldTimeout) clearTimeout(shieldTimeout);
+    if (lifeEffectTimeout) clearTimeout(lifeEffectTimeout);
     applyLevelConfiguration(currentLevel);
+    originalPlayerSpeed = playerSpeed;  // Actualizar velocidad original según el nivel
     player = new Player(playerLife, 0);
     createNewEvil();
     showLifeAndScore();
@@ -674,7 +699,17 @@ function startNextLevel() {
     evilCounter = 1;
     playerShotsBuffer = [];
     evilShotsBuffer = [];
+    powersBuffer = [];   // Limpiar poderes al cambiar de nivel
+    // Resetear efectos de poderes
+    doubleFireActive = false;
+    shieldActive = false;
+    lifeEffectActive = false;
+    if (doubleFireTimeout) clearTimeout(doubleFireTimeout);
+    if (shieldTimeout) clearTimeout(shieldTimeout);
+    if (lifeEffectTimeout) clearTimeout(lifeEffectTimeout);
     applyLevelConfiguration(currentLevel);
+    player.speed = playerSpeed;  // Restaurar velocidad original del nuevo nivel
+    originalPlayerSpeed = playerSpeed;  // Actualizar velocidad original para el nuevo nivel
     // Cambiar la música al siguiente nivel
     changeTrack(getMusicTrackForLevel(currentLevel));
     onLevelChanged(currentLevel, livesBeforeTransition);
@@ -688,6 +723,8 @@ function startNextLevel() {
  */
 function showLevelTransition() {
     levelTransitionActive = true;
+    transitionStartTime = now;
+    transitionProgress = 0;
     setTimeout(function() {
         levelTransitionActive = false;
     }, CONFIG.LEVEL_TRANSITION_DELAY);
@@ -739,6 +776,7 @@ function isEvilHittingPlayer() {
 /**
  * Verifica si un disparo del jugador impactó al enemigo activo.
  * Si hay impacto: reduce la vida del enemigo (o lo mata) y elimina el disparo.
+ * Si mata al enemigo, hay probabilidad de crear un poder aleatorio.
  * @param {PlayerShot} shot - El disparo a evaluar.
  * @returns {boolean} false si hubo impacto; true si el disparo puede continuar.
  */
@@ -755,12 +793,112 @@ function checkCollisions(shot) {
             }
             evil.kill();
             player.score += evil.pointsToKill;
+            // Crear poder aleatorio al matar un enemigo
+            createRandomPower(evil.posX + evil.image.width / 2, evil.posY);
             onEnemyKilled();
         }
         shot.deleteShot(parseInt(shot.identifier));
         return false;
     }
     return true;
+}
+
+/**
+ * Crea un poder aleatorio con 40% de probabilidad.
+ * @param {number} x - Posición horizontal.
+ * @param {number} y - Posición vertical.
+ */
+function createRandomPower(x, y) {
+    // 40% de probabilidad de crear un poder
+    if (Math.random() < CONFIG.POWER_SPAWN_CHANCE) {
+        var types = ['vida', 'dobleDisparo', 'escudo'];
+        var randomType = types[Math.floor(Math.random() * types.length)];
+        
+        // Crear objeto poder sin usar clase
+        var power = {
+            posX: x,
+            posY: y,
+            type: randomType,
+            width: 40,
+            height: 40,
+            speed: 2,
+            color: (randomType === 'vida') ? '#FF6B6B' : 
+                   (randomType === 'dobleDisparo') ? '#FFD93D' : '#4ECDC4',
+            emoji: (randomType === 'vida') ? '❤️' : 
+                   (randomType === 'dobleDisparo') ? '🔫' : '🛡️',
+            image: (randomType === 'vida') ? powerVidaImage : 
+                   (randomType === 'dobleDisparo') ? powerDisparoImage : powerEscudoImage
+        };
+        
+        powersBuffer.push(power);
+    }
+}
+
+/**
+ * Verifica si el jugador ha colisionado con algún poder y aplica el efecto.
+ */
+function checkPowerCollisions() {
+    for (var i = powersBuffer.length - 1; i >= 0; i--) {
+        var power = powersBuffer[i];
+        if (!power) continue;
+        
+        // Detectar colisión con jugador
+        var hitPlayer = (power.posX >= player.posX && power.posX <= (player.posX + player.width) &&
+                        power.posY >= player.posY && power.posY <= (player.posY + player.height));
+        
+        if (hitPlayer) {
+            applyPowerEffect(power);
+            arrayRemove(powersBuffer, i);
+        } else if (power.posY > canvas.height) {
+            // Eliminar si sale de pantalla
+            arrayRemove(powersBuffer, i);
+        }
+    }
+}
+
+/**
+ * Aplica el efecto del poder al jugador según su tipo.
+ * @param {Power} power - El poder a aplicar.
+ */
+function applyPowerEffect(power) {
+    switch(power.type) {
+        case 'vida':
+            // Recuperar una vida, máximo CONFIG.POWER_MAX_LIVES
+            if (player.life < CONFIG.POWER_MAX_LIVES) {
+                player.life++;
+            }
+            // Mostrar efecto de vida durante 2 segundos
+            if (lifeEffectTimeout) {
+                clearTimeout(lifeEffectTimeout);
+            }
+            lifeEffectActive = true;
+            lifeEffectTimeout = setTimeout(function() {
+                lifeEffectActive = false;
+            }, 2000);  // 2 segundos
+            break;
+        
+        case 'dobleDisparo':
+            // Activa disparo doble por 10 segundos
+            if (doubleFireTimeout) {
+                clearTimeout(doubleFireTimeout);
+            }
+            doubleFireActive = true;
+            doubleFireTimeout = setTimeout(function() {
+                doubleFireActive = false;
+            }, CONFIG.POWER_DURATION);
+            break;
+        
+        case 'escudo':
+            // Activa escudo por 10 segundos (jugador invulnerable)
+            if (shieldTimeout) {
+                clearTimeout(shieldTimeout);
+            }
+            shieldActive = true;
+            shieldTimeout = setTimeout(function() {
+                shieldActive = false;
+            }, CONFIG.POWER_DURATION);
+            break;
+    }
 }
 
 /******************************* ENTRADA DE TECLADO *******************************/
@@ -835,17 +973,15 @@ function update(dt) {
         return;
     }
     if (levelTransitionActive) {
-        // Durante la transición de nivel, mostrar el mensaje
-        bufferctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        bufferctx.fillRect(0, 0, canvas.width, canvas.height);
-        bufferctx.fillStyle = '#FFD700';
-        bufferctx.font = 'bold 32px Arial';
-        var levelConfig = CONFIG.LEVELS[currentLevel];
-        bufferctx.fillText(levelConfig.name, canvas.width/2 - 150, canvas.height/2);
+        // Durante la transición de nivel, mostrar animación arcade
+        drawLevelTransitionEffect();
         return;
     }
     if (gamePaused) {
         bufferctx.drawImage(player, player.posX, player.posY);
+        if (lifeEffectActive) drawLifeEffect();
+        if (doubleFireActive) drawDoubleFirEffect();
+        if (shieldActive) drawShieldEffect();
         bufferctx.drawImage(evil.image, evil.posX, evil.posY);
         drawEnemyLifeBar();
         showLifeAndScore();
@@ -861,11 +997,20 @@ function update(dt) {
     }
 
     bufferctx.drawImage(player, player.posX, player.posY);
+    if (lifeEffectActive) drawLifeEffect();
+    if (doubleFireActive) drawDoubleFirEffect();
+    if (shieldActive) drawShieldEffect();
     bufferctx.drawImage(evil.image, evil.posX, evil.posY);
     drawEnemyLifeBar();
 
     updateEvil(dt);
     updateSlowdownEffect();  // Actualizar efecto de lentitud
+
+    // Actualizar y renderizar poderes
+    for (var p = 0; p < powersBuffer.length; p++) {
+        updatePower(powersBuffer[p], p, dt);
+    }
+    checkPowerCollisions();
 
     for (var j = 0; j < playerShotsBuffer.length; j++) {
         updatePlayerShot(playerShotsBuffer[j], j, dt);
@@ -931,7 +1076,7 @@ function showLifeAndScore() {
     
     // Mostrar nivel
     bufferctx.textAlign = 'left';
-    bufferctx.fillStyle = '#FFD700';
+    bufferctx.fillStyle = '#26b619';
     bufferctx.font = 'bold 14px Arial';
     bufferctx.fillText('Nivel ' + currentLevel, 10, 20);
     
@@ -950,7 +1095,442 @@ function showLifeAndScore() {
         hearts += '\u2665 ';
     }
     bufferctx.fillText(hearts, canvas.width - 5, 45);
+    
+    // Mostrar indicadores de efectos activos
     bufferctx.textAlign = 'left';
+    var yOffset = 60;
+    if (doubleFireActive) {
+        bufferctx.fillStyle = '#FFD93D';
+        bufferctx.font = 'bold 14px Arial';
+        bufferctx.fillText('🔫 Disparo Doble Activo', 20, yOffset);
+        yOffset += 20;
+    }
+    if (shieldActive) {
+        bufferctx.fillStyle = '#4ECDC4';
+        bufferctx.font = 'bold 14px Arial';
+        bufferctx.fillText('🛡️ Escudo Activo', 20, yOffset);
+    }
+    bufferctx.textAlign = 'left';
+}
+
+/**
+ * Dibuja cañones laterales estilo arcade cuando el jugador tiene doble disparo activo.
+ */
+function drawDoubleFirEffect() {
+    var cannonColor = '#FFD93D';  // Amarillo para los cañones
+    var glowColor = '#FFFF00';   // Amarillo brillante para el brillo
+    var playerCenterX = player.posX + player.width / 2;
+    var playerCenterY = player.posY + player.height / 2;
+    
+    // Efecto pulsante: brillo de los cañones
+    var pulseValue = (Math.sin(now * 8) + 1) / 2;  // Oscila entre 0 y 1
+    bufferctx.globalAlpha = 0.6 + (pulseValue * 0.4);  // Oscila entre 0.6 y 1.0
+    
+    // CAÑÓN IZQUIERDO
+    var leftCannonX = player.posX + 8;
+    var leftCannonY = player.posY + 20;
+    
+    // Base del cañón (rectángulo redondeado)
+    bufferctx.fillStyle = cannonColor;
+    bufferctx.beginPath();
+    bufferctx.moveTo(leftCannonX + 3, leftCannonY);
+    bufferctx.lineTo(leftCannonX + 12, leftCannonY);
+    bufferctx.quadraticCurveTo(leftCannonX + 14, leftCannonY + 2, leftCannonX + 14, leftCannonY + 6);
+    bufferctx.lineTo(leftCannonX + 14, leftCannonY + 20);
+    bufferctx.quadraticCurveTo(leftCannonX + 12, leftCannonY + 22, leftCannonX + 8, leftCannonY + 22);
+    bufferctx.lineTo(leftCannonX + 2, leftCannonY + 22);
+    bufferctx.quadraticCurveTo(leftCannonX, leftCannonY + 20, leftCannonX, leftCannonY + 16);
+    bufferctx.lineTo(leftCannonX, leftCannonY + 6);
+    bufferctx.quadraticCurveTo(leftCannonX, leftCannonY + 2, leftCannonX + 3, leftCannonY);
+    bufferctx.fill();
+    
+    // Tubo del cañón (más largo)
+    bufferctx.fillStyle = cannonColor;
+    bufferctx.fillRect(leftCannonX + 3, leftCannonY - 8, 8, 10);
+    
+    // Punta del cañón izquierdo (triángulo)
+    bufferctx.fillStyle = glowColor;
+    bufferctx.beginPath();
+    bufferctx.moveTo(leftCannonX + 5, leftCannonY - 8);
+    bufferctx.lineTo(leftCannonX + 11, leftCannonY - 8);
+    bufferctx.lineTo(leftCannonX + 8, leftCannonY - 14);
+    bufferctx.fill();
+    
+    // Destello en la punta
+    bufferctx.fillStyle = 'rgba(255, 255, 255, ' + (0.4 + pulseValue * 0.6) + ')';
+    bufferctx.beginPath();
+    bufferctx.arc(leftCannonX + 8, leftCannonY - 12, 2, 0, Math.PI * 2);
+    bufferctx.fill();
+    
+    // CAÑÓN DERECHO
+    var rightCannonX = player.posX + player.width - 14;
+    var rightCannonY = player.posY + 20;
+    
+    // Base del cañón (rectángulo redondeado)
+    bufferctx.fillStyle = cannonColor;
+    bufferctx.beginPath();
+    bufferctx.moveTo(rightCannonX + 2, rightCannonY);
+    bufferctx.lineTo(rightCannonX + 11, rightCannonY);
+    bufferctx.quadraticCurveTo(rightCannonX + 14, rightCannonY + 2, rightCannonX + 14, rightCannonY + 6);
+    bufferctx.lineTo(rightCannonX + 14, rightCannonY + 16);
+    bufferctx.quadraticCurveTo(rightCannonX + 14, rightCannonY + 20, rightCannonX + 11, rightCannonY + 22);
+    bufferctx.lineTo(rightCannonX + 3, rightCannonY + 22);
+    bufferctx.quadraticCurveTo(rightCannonX, rightCannonY + 20, rightCannonX, rightCannonY + 6);
+    bufferctx.quadraticCurveTo(rightCannonX, rightCannonY + 2, rightCannonX + 2, rightCannonY);
+    bufferctx.fill();
+    
+    // Tubo del cañón (más largo)
+    bufferctx.fillStyle = cannonColor;
+    bufferctx.fillRect(rightCannonX + 5, rightCannonY - 8, 8, 10);
+    
+    // Punta del cañón derecho (triángulo)
+    bufferctx.fillStyle = glowColor;
+    bufferctx.beginPath();
+    bufferctx.moveTo(rightCannonX + 3, rightCannonY - 8);
+    bufferctx.lineTo(rightCannonX + 9, rightCannonY - 8);
+    bufferctx.lineTo(rightCannonX + 6, rightCannonY - 14);
+    bufferctx.fill();
+    
+    // Destello en la punta
+    bufferctx.fillStyle = 'rgba(255, 255, 255, ' + (0.4 + pulseValue * 0.6) + ')';
+    bufferctx.beginPath();
+    bufferctx.arc(rightCannonX + 6, rightCannonY - 12, 2, 0, Math.PI * 2);
+    bufferctx.fill();
+    
+    // Aura amarilla alrededor del jugador
+    bufferctx.strokeStyle = 'rgba(255, 217, 61, 0.5)';
+    bufferctx.lineWidth = 2;
+    bufferctx.beginPath();
+    bufferctx.rect(player.posX - 5, player.posY - 5, player.width + 10, player.height + 10);
+    bufferctx.stroke();
+    
+    bufferctx.globalAlpha = 1.0;
+}
+
+/**
+ * Dibuja un efecto de vida estilo arcade cuando el jugador agarra el poder de vida.
+ */
+function drawLifeEffect() {
+    var lifeColor = '#FF6B6B';  // Rojo para vida
+    var glowColor = '#FF1744';  // Rojo más oscuro para el brillo
+    var playerCenterX = player.posX + player.width / 2;
+    var playerCenterY = player.posY + player.height / 2;
+    
+    // Efecto pulsante fuerte
+    var pulseValue = (Math.sin(now * 10) + 1) / 2;  // Oscila entre 0 y 1
+    var alpha = 0.4 + (pulseValue * 0.5);  // Oscila entre 0.4 y 0.9
+    
+    bufferctx.globalAlpha = alpha;
+    
+    // Aura roja pulsante alrededor del jugador
+    bufferctx.strokeStyle = lifeColor;
+    bufferctx.lineWidth = 3;
+    bufferctx.beginPath();
+    bufferctx.arc(playerCenterX, playerCenterY, 35 + pulseValue * 5, 0, Math.PI * 2);
+    bufferctx.stroke();
+    
+    // Segunda aura con fase desfasada
+    bufferctx.strokeStyle = glowColor;
+    bufferctx.lineWidth = 2;
+    bufferctx.globalAlpha = alpha * 0.6;
+    bufferctx.beginPath();
+    bufferctx.arc(playerCenterX, playerCenterY, 28, 0, Math.PI * 2);
+    bufferctx.stroke();
+    
+    // Dibujar corazones decorativos alrededor del jugador
+    bufferctx.globalAlpha = alpha * 0.8;
+    bufferctx.fillStyle = lifeColor;
+    var heartCount = 4;
+    for (var i = 0; i < heartCount; i++) {
+        var angle = (i / heartCount) * Math.PI * 2 + now * 2;
+        var heartX = playerCenterX + Math.cos(angle) * 40;
+        var heartY = playerCenterY + Math.sin(angle) * 40;
+        
+        // Dibujar corazón pequeño
+        var scale = 0.015 + pulseValue * 0.005;
+        bufferctx.save();
+        bufferctx.translate(heartX, heartY);
+        bufferctx.scale(scale, scale);
+        drawSmallHeart(0, 0);
+        bufferctx.restore();
+    }
+    
+    bufferctx.globalAlpha = 1.0;
+}
+
+/**
+ * Dibuja un corazón pequeño en las coordenadas especificadas.
+ */
+function drawSmallHeart(x, y) {
+    bufferctx.beginPath();
+    bufferctx.moveTo(x, y + 50);
+    bufferctx.bezierCurveTo(x, y, x - 50, y, x - 50, y - 30);
+    bufferctx.bezierCurveTo(x - 50, y - 60, x, y - 60, x, y - 30);
+    bufferctx.bezierCurveTo(x, y - 60, x + 50, y - 60, x + 50, y - 30);
+    bufferctx.bezierCurveTo(x + 50, y, x, y, x, y + 50);
+    bufferctx.fill();
+}
+
+/**
+ * Dibuja la animación de transición de nivel arcade.
+ */
+function drawLevelTransitionEffect() {
+    // Calcular progreso de la transición (0 a 1)
+    var elapsed = now - transitionStartTime;
+    transitionProgress = Math.min(elapsed / (CONFIG.LEVEL_TRANSITION_DELAY - 500), 1);
+    
+    if (transitionProgress > 1) transitionProgress = 1;
+    
+    // Determinar qué animación mostrar según el nivel actual
+    if (currentLevel === 2) {
+        drawTransitionLevel1to2();
+    } else if (currentLevel === 3) {
+        drawTransitionLevel2to3();
+    } else if (currentLevel === 4) {
+        drawTransitionLevel3toBoss();
+    }
+}
+
+/**
+ * Transición Nivel 1 a 2: Efecto de barrido simple tipo arcade
+ */
+function drawTransitionLevel1to2() {
+    // Fondo oscuro
+    bufferctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    bufferctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Línea de barrido que se mueve de izquierda a derecha
+    var barX = -canvas.width + (transitionProgress * canvas.width * 2);
+    bufferctx.fillStyle = 'rgba(129, 199, 132, 0.4)';
+    bufferctx.fillRect(barX, 0, canvas.width / 4, canvas.height);
+    
+    // Líneas horizontales tipo CRT
+    bufferctx.strokeStyle = 'rgba(129, 199, 132, 0.3)';
+    bufferctx.lineWidth = 1;
+    for (var i = 0; i < canvas.height; i += 20) {
+        bufferctx.beginPath();
+        bufferctx.moveTo(0, i);
+        bufferctx.lineTo(canvas.width, i);
+        bufferctx.stroke();
+    }
+    
+    // Efecto de fade in del texto
+    var textAlpha = Math.min(1, transitionProgress * 2);
+    bufferctx.textAlign = 'center';
+    bufferctx.globalAlpha = textAlpha;
+    
+    // Primera línea
+    bufferctx.font = 'bold 24px monospace';
+    bufferctx.fillStyle = '#81c784';
+    bufferctx.fillText('NIVEL 1 COMPLETADO', canvas.width / 2, canvas.height / 2 - 80);
+    
+    // Segunda línea más grande
+    bufferctx.font = 'bold 40px monospace';
+    bufferctx.fillStyle = '#FFD700';
+    bufferctx.fillText('DESBLOQUEANDO NIVEL 2', canvas.width / 2, canvas.height / 2 - 10);
+    
+    // Subtítulo
+    bufferctx.font = 'bold 16px monospace';
+    bufferctx.fillStyle = '#81c784';
+    bufferctx.fillText('Primer encuentro...', canvas.width / 2, canvas.height / 2 + 60);
+    
+    bufferctx.globalAlpha = 1.0;
+    bufferctx.textAlign = 'left';
+}
+
+/**
+ * Transición Nivel 2 a 3: Pulso de energía simple
+ */
+function drawTransitionLevel2to3() {
+    // Fondo oscuro
+    bufferctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
+    bufferctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    var centerX = canvas.width / 2;
+    var centerY = canvas.height / 2;
+    
+    // Pulsación central creciente - escalada al tamaño del canvas
+    var maxRadius = Math.min(canvas.width, canvas.height) * 0.35;
+    var pulseRadius = transitionProgress * maxRadius;
+    bufferctx.strokeStyle = '#ff4500';
+    bufferctx.lineWidth = 3;
+    bufferctx.beginPath();
+    bufferctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2);
+    bufferctx.stroke();
+    
+    // Anillos secundarios
+    for (var r = 1; r <= 3; r++) {
+        var delay = r * 0.2;
+        if (transitionProgress > delay) {
+            var ringProgress = (transitionProgress - delay) / (1 - delay);
+            var ringRadius = ringProgress * maxRadius;
+            var ringAlpha = 1 - ringProgress;
+            bufferctx.strokeStyle = 'rgba(255, 69, 0, ' + ringAlpha * 0.6 + ')';
+            bufferctx.lineWidth = 2;
+            bufferctx.beginPath();
+            bufferctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+            bufferctx.stroke();
+        }
+    }
+    
+    // Líneas radiales
+    bufferctx.strokeStyle = 'rgba(129, 199, 132, 0.5)';
+    bufferctx.lineWidth = 1;
+    var radialLength = Math.min(canvas.width, canvas.height) * 0.25;
+    for (var angle = 0; angle < Math.PI * 2; angle += Math.PI / 8) {
+        var endX = centerX + Math.cos(angle) * (transitionProgress * radialLength);
+        var endY = centerY + Math.sin(angle) * (transitionProgress * radialLength);
+        bufferctx.beginPath();
+        bufferctx.moveTo(centerX, centerY);
+        bufferctx.lineTo(endX, endY);
+        bufferctx.stroke();
+    }
+    
+    // Texto
+    var textAlpha = Math.min(1, transitionProgress * 2);
+    bufferctx.textAlign = 'center';
+    bufferctx.globalAlpha = textAlpha;
+    
+    // Primera línea
+    bufferctx.font = 'bold 24px monospace';
+    bufferctx.fillStyle = '#ff4500';
+    bufferctx.fillText('NIVEL 2 COMPLETADO', centerX, centerY - 90);
+    
+    // Segunda línea más grande
+    bufferctx.font = 'bold 40px monospace';
+    bufferctx.fillStyle = '#FFD700';
+    bufferctx.fillText('DESBLOQUEANDO NIVEL 3', centerX, centerY - 20);
+    
+    // Subtítulo
+    bufferctx.font = 'bold 16px monospace';
+    bufferctx.fillStyle = '#81c784';
+    bufferctx.fillText('El poder se intensifica...', centerX, centerY + 70);
+    
+    bufferctx.globalAlpha = 1.0;
+    bufferctx.textAlign = 'left';
+}
+
+/**
+ * Transición Nivel 3 a Jefe Final: Efecto de enfoque intenso
+ */
+function drawTransitionLevel3toBoss() {
+    // Fondo oscuro
+    bufferctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
+    bufferctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    var centerX = canvas.width / 2;
+    var centerY = canvas.height / 2;
+    var maxRadius = Math.min(canvas.width, canvas.height) * 0.35;
+    
+    // Pulsaciones múltiples
+    for (var p = 0; p < 3; p++) {
+        var delay = p * 0.2;
+        if (transitionProgress > delay) {
+            var pulseProgress = (transitionProgress - delay) / (1 - delay);
+            var radius = pulseProgress * maxRadius;
+            var alpha = (1 - pulseProgress) * 0.8;
+            bufferctx.strokeStyle = 'rgba(255, 69, 0, ' + alpha + ')';
+            bufferctx.lineWidth = 4;
+            bufferctx.beginPath();
+            bufferctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            bufferctx.stroke();
+        }
+    }
+    
+    // Líneas de energía que se expanden
+    bufferctx.strokeStyle = 'rgba(255, 69, 0, 0.6)';
+    bufferctx.lineWidth = 2;
+    var rayCount = 12;
+    var rayLength = Math.min(canvas.width, canvas.height) * 0.3;
+    for (var i = 0; i < rayCount; i++) {
+        var angle = (i / rayCount) * Math.PI * 2;
+        var length = transitionProgress * rayLength;
+        var endX = centerX + Math.cos(angle) * length;
+        var endY = centerY + Math.sin(angle) * length;
+        bufferctx.beginPath();
+        bufferctx.moveTo(centerX, centerY);
+        bufferctx.lineTo(endX, endY);
+        bufferctx.stroke();
+    }
+    
+    // Núcleo central pulsante
+    var coreAlpha = 0.5 + (Math.sin(transitionProgress * Math.PI * 4) * 0.5);
+    bufferctx.fillStyle = 'rgba(255, 69, 0, ' + coreAlpha + ')';
+    bufferctx.beginPath();
+    bufferctx.arc(centerX, centerY, 20, 0, Math.PI * 2);
+    bufferctx.fill();
+    
+    // Efecto de brillo blanco cuando está completo
+    if (transitionProgress > 0.5) {
+        var glowAlpha = (transitionProgress - 0.5) * 0.8;
+        bufferctx.fillStyle = 'rgba(255, 255, 255, ' + glowAlpha + ')';
+        bufferctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    // Texto del jefe
+    var textAlpha = Math.min(1, transitionProgress * 2);
+    bufferctx.textAlign = 'center';
+    bufferctx.globalAlpha = textAlpha;
+    
+    // Primera línea
+    bufferctx.font = 'bold 24px monospace';
+    bufferctx.fillStyle = '#ff4500';
+    bufferctx.fillText('NIVEL 3 COMPLETADO', centerX, centerY - 90);
+    
+    // Segunda línea más grande
+    bufferctx.font = 'bold 40px monospace';
+    bufferctx.fillStyle = '#FFD700';
+    bufferctx.fillText('ENCONTRANDO AL BOSS', centerX, centerY - 20);
+    
+    // Subtítulo
+    bufferctx.font = 'bold 16px monospace';
+    bufferctx.fillStyle = '#81c784';
+    bufferctx.fillText('La batalla final te espera...', centerX, centerY + 70);
+    
+    bufferctx.globalAlpha = 1.0;
+    bufferctx.textAlign = 'left';
+}
+
+/**
+ * Dibuja un escudo estilo arcade cuando el jugador tiene el escudo activo.
+ */
+function drawShieldEffect() {
+    var shieldColor = '#4ECDC4';  // Azul claro del escudo
+    var playerCenterX = player.posX + player.width / 2;
+    var playerCenterY = player.posY + player.height / 2;
+    var shieldRadius = 45;
+    
+    // Efecto pulsante: varía la opacidad según el tiempo
+    var pulseValue = (Math.sin(now * 5) + 1) / 2;  // Oscila entre 0 y 1
+    var alpha = 0.3 + (pulseValue * 0.3);  // Oscila entre 0.3 y 0.6
+    
+    // Guardar el alpha actual
+    bufferctx.globalAlpha = alpha;
+    
+    // Dibujar circulo de escudo
+    bufferctx.strokeStyle = shieldColor;
+    bufferctx.lineWidth = 3;
+    bufferctx.beginPath();
+    bufferctx.arc(playerCenterX, playerCenterY, shieldRadius, 0, Math.PI * 2);
+    bufferctx.stroke();
+    
+    // Dibujar algunos "rayos" alrededor del escudo para efecto arcade
+    bufferctx.lineWidth = 2;
+    for (var i = 0; i < 8; i++) {
+        var angle = (i / 8) * Math.PI * 2;
+        var x1 = playerCenterX + Math.cos(angle) * shieldRadius;
+        var y1 = playerCenterY + Math.sin(angle) * shieldRadius;
+        var x2 = playerCenterX + Math.cos(angle) * (shieldRadius + 10);
+        var y2 = playerCenterY + Math.sin(angle) * (shieldRadius + 10);
+        
+        bufferctx.beginPath();
+        bufferctx.moveTo(x1, y1);
+        bufferctx.lineTo(x2, y2);
+        bufferctx.stroke();
+    }
+    
+    // Restaurar el alpha
+    bufferctx.globalAlpha = 1.0;
 }
 
 /** Muestra la pantalla de derrota mediante el overlay. */
@@ -1025,11 +1605,55 @@ function updateEvilShot(shot, id, dt) {
                 shot.deleteShot(parseInt(shot.identifier));
             }
         } else {
-            playSound('Sonidos/Perdida_vida.mp3', 0.8);
-            player.killPlayer();
-            onPlayerDamaged();
+            // Solo dañar al jugador si el escudo no está activo
+            if (!shieldActive) {
+                playSound('Sonidos/Perdida_vida.mp3', 0.8);
+                player.killPlayer();
+                onPlayerDamaged();
+            }
+            // Eliminar el disparo en ambos casos
+            shot.deleteShot(parseInt(shot.identifier));
         }
     }
+}
+
+/**
+ * Actualiza un poder: mueve hacia abajo, lo renderiza.
+ * @param {Object} power - El poder a actualizar.
+ * @param {number} id - Índice del poder en powersBuffer.
+ * @param {number} dt - Delta time en segundos.
+ */
+function updatePower(power, id, dt) {
+    if (!power) {
+        return;
+    }
+    
+    // Actualizar posición
+    power.posY += power.speed * dt * 60;
+    
+    // Si hay imagen, dibujarla; si no, usar color y emoji
+    if (power.image && power.image.complete) {
+        // Dibujar imagen
+        bufferctx.drawImage(power.image, power.posX, power.posY, power.width, power.height);
+    } else {
+        // Dibujar fondo de color
+        bufferctx.fillStyle = power.color || '#FFFFFF';
+        bufferctx.fillRect(power.posX, power.posY, power.width, power.height);
+        
+        // Dibujar emoji
+        bufferctx.fillStyle = '#000000';
+        bufferctx.font = 'bold 28px Arial';
+        bufferctx.textAlign = 'center';
+        bufferctx.textBaseline = 'middle';
+        var emoji = power.emoji || '?';
+        bufferctx.fillText(emoji, power.posX + power.width / 2, power.posY + power.height / 2);
+        bufferctx.textAlign = 'left';
+    }
+    
+    // Borde del poder (siempre se dibuja)
+    bufferctx.strokeStyle = '#FFFFFF';
+    bufferctx.lineWidth = 2;
+    bufferctx.strokeRect(power.posX, power.posY, power.width, power.height);
 }
 
 /******************************* API PÚBLICA *******************************/
