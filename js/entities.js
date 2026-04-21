@@ -242,11 +242,13 @@ function Player(life, score) {
         if (player.dead) {
             return;
         }
+        // Aplicar modificador de velocidad si está ralentizado
+        var speedMultiplier = playerSlowed ? SLOWDOWN_MULTIPLIER : 1;
         if (keyPressed.left && player.posX > CONFIG.PLAYER_BOUNDARY_PADDING) {
-            player.posX -= player.speed * dt * 60;
+            player.posX -= player.speed * dt * 60 * speedMultiplier;
         }
         if (keyPressed.right && player.posX < (canvas.width - player.width - CONFIG.PLAYER_BOUNDARY_PADDING)) {
-            player.posX += player.speed * dt * 60;
+            player.posX += player.speed * dt * 60 * speedMultiplier;
         }
         if (keyPressed.fire) {
             shoot();

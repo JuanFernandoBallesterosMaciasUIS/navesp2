@@ -80,6 +80,50 @@ var gameStarted = false;
 var gamePaused = false;
 var levelTransitionActive = false;  // Variable para controlar la transición de nivel
 
+// Variables para el efecto de penalización por enemigo escapado
+var playerSlowed = false;
+var slowedEndTime = 0;
+var SLOWDOWN_DURATION = 3000;  // Duración del efecto en milisegundos
+var SLOWDOWN_MULTIPLIER = 0.4;  // Velocidad reduce al 40%
+
+/**
+ * Aplica la penalización por enemigo escapado: lentitud, pantalla roja y sonido de alerta.
+ * Reduce la velocidad del jugador al 40% durante 3 segundos.
+ */
+function applySlowdownPenalty() {
+    if (!playerSlowed) {
+        playerSlowed = true;
+        slowedEndTime = Date.now() + SLOWDOWN_DURATION;
+        playSound('Sonidos/Alerta.mp3', 0.9);
+    }
+}
+
+/**
+ * Verifica si el efecto de lentitud ha terminado y restaura la velocidad.
+ */
+function updateSlowdownEffect() {
+    if (playerSlowed && Date.now() >= slowedEndTime) {
+        playerSlowed = false;
+    }
+}
+
+/**
+ * Dibuja un overlay rojo semi-transparente cuando el jugador está ralentizado.
+ */
+function drawSlowdownOverlay() {
+    if (playerSlowed) {
+        bufferctx.fillStyle = 'rgba(255, 0, 0, 0.15)';
+        bufferctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Texto de advertencia
+        bufferctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+        bufferctx.font = 'bold 20px Arial';
+        bufferctx.textAlign = 'center';
+        bufferctx.fillText('¡LENTO!', canvas.width / 2, 60);
+        bufferctx.textAlign = 'left';
+    }
+}
+
 /******************************* CARGA DE IMÁGENES *******************************/
 
 /**
@@ -796,6 +840,7 @@ function update(dt) {
     drawEnemyLifeBar();
 
     updateEvil(dt);
+    updateSlowdownEffect();  // Actualizar efecto de lentitud
 
     for (var j = 0; j < playerShotsBuffer.length; j++) {
         updatePlayerShot(playerShotsBuffer[j], j, dt);
@@ -811,6 +856,7 @@ function update(dt) {
     }
 
     showLifeAndScore();
+    drawSlowdownOverlay();  // Dibujar overlay rojo si está ralentizado
     playerAction(dt);
 }
 
@@ -911,6 +957,7 @@ function updateEvil(dt) {
     if (!evil.dead) {
         evil.update(dt);
         if (evil.isOutOfScreen()) {
+            applySlowdownPenalty();  // Aplicar penalización cuando el enemigo se escapa
             evil.reappear();
         }
     }
