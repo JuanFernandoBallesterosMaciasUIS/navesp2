@@ -864,13 +864,13 @@ function drawBackground() {
 
 /**
  * Actualiza la posición y animación del enemigo activo.
- * Si sale de pantalla, lo elimina (llama evil.kill()).
+ * Si sale de pantalla, reaparece en la parte superior (llama evil.reappear()).
  */
 function updateEvil(dt) {
     if (!evil.dead) {
         evil.update(dt);
         if (evil.isOutOfScreen()) {
-            evil.kill();
+            evil.reappear();
         }
     }
 }
