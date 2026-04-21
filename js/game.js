@@ -454,6 +454,7 @@ function init() {
         if (!lastTime) lastTime = timestamp;
         var dt = Math.min((timestamp - lastTime) / 1000, 0.05);
         lastTime = timestamp;
+        now = timestamp;
         loop(dt);
         requestAnimFrame(anim);
     }
@@ -1096,17 +1097,18 @@ function showLifeAndScore() {
     bufferctx.fillText(hearts, canvas.width - 5, 45);
     
     // Mostrar indicadores de efectos activos
+    bufferctx.textAlign = 'left';
     var yOffset = 60;
     if (doubleFireActive) {
         bufferctx.fillStyle = '#FFD93D';
         bufferctx.font = 'bold 14px Arial';
-        bufferctx.fillText('🔫 Disparo Doble Activo', 10, yOffset);
+        bufferctx.fillText('🔫 Disparo Doble Activo', 20, yOffset);
         yOffset += 20;
     }
     if (shieldActive) {
         bufferctx.fillStyle = '#4ECDC4';
         bufferctx.font = 'bold 14px Arial';
-        bufferctx.fillText('🛡️ Escudo Activo', 10, yOffset);
+        bufferctx.fillText('🛡️ Escudo Activo', 20, yOffset);
     }
     bufferctx.textAlign = 'left';
 }
@@ -1290,257 +1292,203 @@ function drawLevelTransitionEffect() {
 }
 
 /**
- * Transición Nivel 1 a 2: Escaneo de líneas tipo CRT arcade
+ * Transición Nivel 1 a 2: Efecto de barrido simple tipo arcade
  */
 function drawTransitionLevel1to2() {
     // Fondo oscuro
-    bufferctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    bufferctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
     bufferctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Líneas de escaneo que bajan
-    bufferctx.strokeStyle = '#00FF00';
-    bufferctx.lineWidth = 3;
-    var scanlineY = -canvas.height + (transitionProgress * canvas.height * 2);
+    // Línea de barrido que se mueve de izquierda a derecha
+    var barX = -canvas.width + (transitionProgress * canvas.width * 2);
+    bufferctx.fillStyle = 'rgba(129, 199, 132, 0.4)';
+    bufferctx.fillRect(barX, 0, canvas.width / 4, canvas.height);
     
-    for (var i = 0; i < 8; i++) {
-        var y = scanlineY + (i * canvas.height / 4);
-        if (y > 0 && y < canvas.height) {
+    // Líneas horizontales tipo CRT
+    bufferctx.strokeStyle = 'rgba(129, 199, 132, 0.3)';
+    bufferctx.lineWidth = 1;
+    for (var i = 0; i < canvas.height; i += 20) {
+        bufferctx.beginPath();
+        bufferctx.moveTo(0, i);
+        bufferctx.lineTo(canvas.width, i);
+        bufferctx.stroke();
+    }
+    
+    // Efecto de fade in del texto
+    var textAlpha = Math.min(1, transitionProgress * 2);
+    bufferctx.textAlign = 'center';
+    bufferctx.globalAlpha = textAlpha;
+    
+    // Primera línea
+    bufferctx.font = 'bold 24px monospace';
+    bufferctx.fillStyle = '#81c784';
+    bufferctx.fillText('NIVEL 1 COMPLETADO', canvas.width / 2, canvas.height / 2 - 80);
+    
+    // Segunda línea más grande
+    bufferctx.font = 'bold 40px monospace';
+    bufferctx.fillStyle = '#FFD700';
+    bufferctx.fillText('DESBLOQUEANDO NIVEL 2', canvas.width / 2, canvas.height / 2 - 10);
+    
+    // Subtítulo
+    bufferctx.font = 'bold 16px monospace';
+    bufferctx.fillStyle = '#81c784';
+    bufferctx.fillText('Primer encuentro...', canvas.width / 2, canvas.height / 2 + 60);
+    
+    bufferctx.globalAlpha = 1.0;
+    bufferctx.textAlign = 'left';
+}
+
+/**
+ * Transición Nivel 2 a 3: Pulso de energía simple
+ */
+function drawTransitionLevel2to3() {
+    // Fondo oscuro
+    bufferctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
+    bufferctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    var centerX = canvas.width / 2;
+    var centerY = canvas.height / 2;
+    
+    // Pulsación central creciente - escalada al tamaño del canvas
+    var maxRadius = Math.min(canvas.width, canvas.height) * 0.35;
+    var pulseRadius = transitionProgress * maxRadius;
+    bufferctx.strokeStyle = '#ff4500';
+    bufferctx.lineWidth = 3;
+    bufferctx.beginPath();
+    bufferctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2);
+    bufferctx.stroke();
+    
+    // Anillos secundarios
+    for (var r = 1; r <= 3; r++) {
+        var delay = r * 0.2;
+        if (transitionProgress > delay) {
+            var ringProgress = (transitionProgress - delay) / (1 - delay);
+            var ringRadius = ringProgress * maxRadius;
+            var ringAlpha = 1 - ringProgress;
+            bufferctx.strokeStyle = 'rgba(255, 69, 0, ' + ringAlpha * 0.6 + ')';
+            bufferctx.lineWidth = 2;
             bufferctx.beginPath();
-            bufferctx.moveTo(0, y);
-            bufferctx.lineTo(canvas.width, y);
+            bufferctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
             bufferctx.stroke();
         }
     }
     
-    // Efecto de distorsión pixelada
-    bufferctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
-    for (var j = 0; j < 20; j++) {
-        var x = Math.random() * canvas.width;
-        var y = Math.random() * canvas.height;
-        var size = 10 + Math.random() * 20;
-        bufferctx.fillRect(x, y, size, size);
-    }
-    
-    // Texto del nivel con efecto 8-bit
-    bufferctx.fillStyle = '#00FF00';
-    bufferctx.font = 'bold 48px monospace';
-    bufferctx.globalAlpha = 0.5 + (transitionProgress * 0.5);
-    bufferctx.fillText('LEVEL 2', canvas.width/2 - 90, canvas.height/2 - 20);
-    bufferctx.font = 'bold 24px monospace';
-    bufferctx.fillText('¡LOS ENEMIGOS DESPIERTAN!', canvas.width/2 - 160, canvas.height/2 + 40);
-    bufferctx.globalAlpha = 1.0;
-}
-
-/**
- * Transición Nivel 2 a 3: Líneas de velocidad convergentes
- */
-function drawTransitionLevel2to3() {
-    // Fondo degradado negro a rojo oscuro
-    var gradient = bufferctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, '#1a0000');
-    gradient.addColorStop(0.5, '#000000');
-    gradient.addColorStop(1, '#3a0000');
-    bufferctx.fillStyle = gradient;
-    bufferctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    var centerX = canvas.width / 2;
-    var centerY = canvas.height / 2;
-    
-    // Pulsación central intensa
-    var pulseSize = 30 + (Math.sin(transitionProgress * Math.PI * 8) * 20);
-    bufferctx.fillStyle = 'rgba(255, 107, 0, 0.4)';
-    bufferctx.beginPath();
-    bufferctx.arc(centerX, centerY, pulseSize, 0, Math.PI * 2);
-    bufferctx.fill();
-    
-    // Líneas de energía radiales que se contraen
-    bufferctx.strokeStyle = '#FF6B00';
-    var lineCount = 32;
-    for (var i = 0; i < lineCount; i++) {
-        var angle = (i / lineCount) * Math.PI * 2 + transitionProgress * Math.PI;
-        var innerRadius = 10 + (1 - transitionProgress) * 150;
-        var outerRadius = 10 + (1 - transitionProgress) * 250;
-        
-        var x1 = centerX + Math.cos(angle) * innerRadius;
-        var y1 = centerY + Math.sin(angle) * innerRadius;
-        var x2 = centerX + Math.cos(angle) * outerRadius;
-        var y2 = centerY + Math.sin(angle) * outerRadius;
-        
-        bufferctx.lineWidth = 2;
-        bufferctx.beginPath();
-        bufferctx.moveTo(x1, y1);
-        bufferctx.lineTo(x2, y2);
-        bufferctx.stroke();
-    }
-    
-    // Círculos concéntricos pulsantes
-    var circleCount = 5;
-    for (var c = 0; c < circleCount; c++) {
-        var delay = c * 0.1;
-        var pulse = (transitionProgress + delay) % 1;
-        var radius = 30 + (pulse * 250);
-        var alpha = Math.max(0, 1 - pulse);
-        
-        bufferctx.strokeStyle = 'rgba(255, 107, 0, ' + alpha * 0.8 + ')';
-        bufferctx.lineWidth = 3;
-        bufferctx.beginPath();
-        bufferctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-        bufferctx.stroke();
-    }
-    
-    // Barras de energía verticales en los costados
-    var barWidth = 8;
-    var barCount = 12;
-    for (var b = 0; b < barCount; b++) {
-        var barX = (b / barCount) * canvas.width;
-        var barHeight = 50 + (Math.sin(transitionProgress * Math.PI * 4 + b * 0.5) * 80);
-        bufferctx.fillStyle = 'rgba(255, 107, 0, 0.6)';
-        bufferctx.fillRect(barX, centerY - barHeight / 2, barWidth, barHeight);
-    }
-    
-    // Efecto de relámpago tipo arcade
-    if (transitionProgress > 0.3 && transitionProgress < 0.7) {
-        bufferctx.strokeStyle = 'rgba(255, 255, 100, 0.8)';
-        bufferctx.lineWidth = 4;
-        var lightningX = centerX + (Math.random() - 0.5) * 50;
-        bufferctx.beginPath();
-        bufferctx.moveTo(centerX - 100, centerY - 150);
-        bufferctx.lineTo(lightningX, centerY);
-        bufferctx.lineTo(centerX + 100, centerY + 150);
-        bufferctx.stroke();
-    }
-    
-    // Destello blanco pulsante
-    var flashIntensity = Math.sin(transitionProgress * Math.PI * 6) * 0.5 + 0.2;
-    bufferctx.fillStyle = 'rgba(255, 255, 255, ' + flashIntensity * 0.4 + ')';
-    bufferctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Texto del nivel con sombra dramática
-    bufferctx.font = 'bold 72px monospace';
-    bufferctx.globalAlpha = 0.3;
-    bufferctx.fillStyle = '#000000';
-    bufferctx.fillText('LEVEL 3', canvas.width/2 - 95, canvas.height/2 - 15);
-    
-    bufferctx.globalAlpha = 0.5 + (transitionProgress * 0.5);
-    bufferctx.fillStyle = '#FF6B00';
-    bufferctx.fillText('LEVEL 3', canvas.width/2 - 90, canvas.height/2 - 20);
-    
-    // Subtítulo con efecto de escritura
-    bufferctx.font = 'bold 28px monospace';
-    bufferctx.fillStyle = '#FFAA00';
-    var subtitleAlpha = Math.sin(transitionProgress * Math.PI * 3) * 0.3 + 0.4;
-    bufferctx.globalAlpha = subtitleAlpha;
-    bufferctx.fillText('⚡ PUNTO SIN RETORNO ⚡', canvas.width/2 - 200, canvas.height/2 + 60);
-    bufferctx.globalAlpha = 1.0;
-}
-
-/**
- * Transición Nivel 3 a Jefe Final: Explosión épica tipo arcade
- */
-function drawTransitionLevel3toBoss() {
-    // Fondo rojo degradado
-    var gradient = bufferctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, '#4a0000');
-    gradient.addColorStop(0.5, '#1a0000');
-    gradient.addColorStop(1, '#6a0000');
-    bufferctx.fillStyle = gradient;
-    bufferctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    var centerX = canvas.width / 2;
-    var centerY = canvas.height / 2;
-    
-    // Onda de choque expansiva (principal)
-    var shockWave = transitionProgress * 500;
-    bufferctx.strokeStyle = 'rgba(255, 0, 0, ' + (1 - transitionProgress) + ')';
-    bufferctx.lineWidth = 5;
-    bufferctx.beginPath();
-    bufferctx.arc(centerX, centerY, 20 + shockWave, 0, Math.PI * 2);
-    bufferctx.stroke();
-    
-    // Múltiples ondas de choque en cascada
-    for (var w = 1; w <= 4; w++) {
-        var delay = w * 0.15;
-        var waveProgress = Math.max(0, transitionProgress - delay);
-        var waveRadius = 20 + (waveProgress * 400);
-        var waveAlpha = Math.max(0, 1 - (waveProgress * 1.5));
-        
-        bufferctx.strokeStyle = 'rgba(255, ' + Math.floor(107 - w * 25) + ', 0, ' + waveAlpha * 0.7 + ')';
-        bufferctx.lineWidth = 4 - w * 0.5;
-        bufferctx.beginPath();
-        bufferctx.arc(centerX, centerY, waveRadius, 0, Math.PI * 2);
-        bufferctx.stroke();
-    }
-    
-    // Partículas de fuego/explosión más grandes y numerosas
-    var particleCount = 50;
-    for (var p = 0; p < particleCount; p++) {
-        var angle = (p / particleCount) * Math.PI * 2 + transitionProgress * Math.PI;
-        var distance = transitionProgress * 400 + Math.sin(p) * 50;
-        var px = centerX + Math.cos(angle) * distance;
-        var py = centerY + Math.sin(angle) * distance;
-        
-        var particleSize = 5 + (Math.sin(p * 0.3) * 8);
-        var particleAlpha = 1 - transitionProgress;
-        
-        bufferctx.fillStyle = 'rgba(255, ' + Math.floor(100 + Math.sin(p) * 155) + ', 0, ' + particleAlpha + ')';
-        bufferctx.fillRect(px - particleSize / 2, py - particleSize / 2, particleSize, particleSize);
-    }
-    
-    // Rayos de fuego en líneas desde el centro
-    bufferctx.strokeStyle = 'rgba(255, 200, 0, 0.6)';
-    bufferctx.lineWidth = 3;
-    var rayCount = 16;
-    for (var r = 0; r < rayCount; r++) {
-        var rayAngle = (r / rayCount) * Math.PI * 2;
-        var rayLength = transitionProgress * 350;
-        var rayEndX = centerX + Math.cos(rayAngle) * rayLength;
-        var rayEndY = centerY + Math.sin(rayAngle) * rayLength;
-        
+    // Líneas radiales
+    bufferctx.strokeStyle = 'rgba(129, 199, 132, 0.5)';
+    bufferctx.lineWidth = 1;
+    var radialLength = Math.min(canvas.width, canvas.height) * 0.25;
+    for (var angle = 0; angle < Math.PI * 2; angle += Math.PI / 8) {
+        var endX = centerX + Math.cos(angle) * (transitionProgress * radialLength);
+        var endY = centerY + Math.sin(angle) * (transitionProgress * radialLength);
         bufferctx.beginPath();
         bufferctx.moveTo(centerX, centerY);
-        bufferctx.lineTo(rayEndX, rayEndY);
+        bufferctx.lineTo(endX, endY);
         bufferctx.stroke();
     }
     
-    // Destello nuclear
-    var flashSize = Math.max(0, transitionProgress - 0.2);
-    bufferctx.fillStyle = 'rgba(255, 255, 100, ' + (1 - flashSize) * 0.5 + ')';
-    bufferctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Texto
+    var textAlpha = Math.min(1, transitionProgress * 2);
+    bufferctx.textAlign = 'center';
+    bufferctx.globalAlpha = textAlpha;
     
-    // Efecto de vibración/distorsión
-    if (transitionProgress < 0.8) {
-        var vibration = Math.sin(transitionProgress * Math.PI * 20) * 3;
-        bufferctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-        bufferctx.lineWidth = 2;
-        bufferctx.strokeRect(vibration, vibration, canvas.width - vibration * 2, canvas.height - vibration * 2);
-    }
+    // Primera línea
+    bufferctx.font = 'bold 24px monospace';
+    bufferctx.fillStyle = '#ff4500';
+    bufferctx.fillText('NIVEL 2 COMPLETADO', centerX, centerY - 90);
     
-    // Texto del jefe con efecto épico
-    var bossTextAlpha = Math.max(0, transitionProgress - 0.25) / 0.75;
+    // Segunda línea más grande
+    bufferctx.font = 'bold 40px monospace';
+    bufferctx.fillStyle = '#FFD700';
+    bufferctx.fillText('DESBLOQUEANDO NIVEL 3', centerX, centerY - 20);
     
-    // Sombra del texto
-    bufferctx.font = 'bold 80px monospace';
-    bufferctx.globalAlpha = bossTextAlpha * 0.4;
-    bufferctx.fillStyle = '#000000';
-    bufferctx.fillText('⚔ JEFE ⚔', centerX - 140, centerY - 25);
-    
-    // Texto principal rojo
-    bufferctx.globalAlpha = bossTextAlpha * 0.8;
-    bufferctx.fillStyle = '#FF0000';
-    bufferctx.fillText('⚔ JEFE ⚔', centerX - 135, centerY - 30);
-    
-    // Efecto de brillo dorado
-    bufferctx.globalAlpha = bossTextAlpha * 0.5;
-    bufferctx.fillStyle = '#FFFF00';
-    bufferctx.fillText('⚔ JEFE ⚔', centerX - 130, centerY - 35);
-    
-    // Subtítulo dramático
-    bufferctx.font = 'bold 32px monospace';
-    bufferctx.globalAlpha = bossTextAlpha;
-    bufferctx.fillStyle = '#FFAA00';
-    bufferctx.fillText('¡ENFRENTA TU DESTINO!', centerX - 230, centerY + 80);
+    // Subtítulo
+    bufferctx.font = 'bold 16px monospace';
+    bufferctx.fillStyle = '#81c784';
+    bufferctx.fillText('El poder se intensifica...', centerX, centerY + 70);
     
     bufferctx.globalAlpha = 1.0;
+    bufferctx.textAlign = 'left';
+}
+
+/**
+ * Transición Nivel 3 a Jefe Final: Efecto de enfoque intenso
+ */
+function drawTransitionLevel3toBoss() {
+    // Fondo oscuro
+    bufferctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
+    bufferctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    var centerX = canvas.width / 2;
+    var centerY = canvas.height / 2;
+    var maxRadius = Math.min(canvas.width, canvas.height) * 0.35;
+    
+    // Pulsaciones múltiples
+    for (var p = 0; p < 3; p++) {
+        var delay = p * 0.2;
+        if (transitionProgress > delay) {
+            var pulseProgress = (transitionProgress - delay) / (1 - delay);
+            var radius = pulseProgress * maxRadius;
+            var alpha = (1 - pulseProgress) * 0.8;
+            bufferctx.strokeStyle = 'rgba(255, 69, 0, ' + alpha + ')';
+            bufferctx.lineWidth = 4;
+            bufferctx.beginPath();
+            bufferctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            bufferctx.stroke();
+        }
+    }
+    
+    // Líneas de energía que se expanden
+    bufferctx.strokeStyle = 'rgba(255, 69, 0, 0.6)';
+    bufferctx.lineWidth = 2;
+    var rayCount = 12;
+    var rayLength = Math.min(canvas.width, canvas.height) * 0.3;
+    for (var i = 0; i < rayCount; i++) {
+        var angle = (i / rayCount) * Math.PI * 2;
+        var length = transitionProgress * rayLength;
+        var endX = centerX + Math.cos(angle) * length;
+        var endY = centerY + Math.sin(angle) * length;
+        bufferctx.beginPath();
+        bufferctx.moveTo(centerX, centerY);
+        bufferctx.lineTo(endX, endY);
+        bufferctx.stroke();
+    }
+    
+    // Núcleo central pulsante
+    var coreAlpha = 0.5 + (Math.sin(transitionProgress * Math.PI * 4) * 0.5);
+    bufferctx.fillStyle = 'rgba(255, 69, 0, ' + coreAlpha + ')';
+    bufferctx.beginPath();
+    bufferctx.arc(centerX, centerY, 20, 0, Math.PI * 2);
+    bufferctx.fill();
+    
+    // Efecto de brillo blanco cuando está completo
+    if (transitionProgress > 0.5) {
+        var glowAlpha = (transitionProgress - 0.5) * 0.8;
+        bufferctx.fillStyle = 'rgba(255, 255, 255, ' + glowAlpha + ')';
+        bufferctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    // Texto del jefe
+    var textAlpha = Math.min(1, transitionProgress * 2);
+    bufferctx.textAlign = 'center';
+    bufferctx.globalAlpha = textAlpha;
+    
+    // Primera línea
+    bufferctx.font = 'bold 24px monospace';
+    bufferctx.fillStyle = '#ff4500';
+    bufferctx.fillText('NIVEL 3 COMPLETADO', centerX, centerY - 90);
+    
+    // Segunda línea más grande
+    bufferctx.font = 'bold 40px monospace';
+    bufferctx.fillStyle = '#FFD700';
+    bufferctx.fillText('ENCONTRANDO AL BOSS', centerX, centerY - 20);
+    
+    // Subtítulo
+    bufferctx.font = 'bold 16px monospace';
+    bufferctx.fillStyle = '#81c784';
+    bufferctx.fillText('La batalla final te espera...', centerX, centerY + 70);
+    
+    bufferctx.globalAlpha = 1.0;
+    bufferctx.textAlign = 'left';
 }
 
 /**
