@@ -1093,7 +1093,7 @@ function showLifeAndScore() {
     for (var i = 0; i < player.life; i++) {
         hearts += '\u2665 ';
     }
-    bufferctx.fillText(hearts, canvas.width - 100, 45);
+    bufferctx.fillText(hearts, canvas.width - 5, 45);
     
     // Mostrar indicadores de efectos activos
     var yOffset = 60;
