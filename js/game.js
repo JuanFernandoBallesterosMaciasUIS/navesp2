@@ -51,6 +51,7 @@ var bossImages  = { animation: [], killed: null };
 
 var backgroundAudio = null;  // Variable para el sonido de fondo
 var backgroundAudioPaused = false;  // Variable para rastrear si el sonido está pausado
+var currentTrack = 'Sonidos/Melodia_1.mp3';  // Melodía activa
 
 var keyPressed = {};
 var keyMap = {
@@ -129,12 +130,48 @@ function scaleCanvas() {
 function initBackgroundAudio() {
     if (!backgroundAudio) {
         backgroundAudio = new Audio();
-        backgroundAudio.src = 'Sonidos/Sonido_fondo.mp3';
         backgroundAudio.loop = true;
-        backgroundAudio.volume = 0.5;  // Volumen al 50%
+        backgroundAudio.volume = 0.5;
+    }
+    if (backgroundAudio.src.indexOf(currentTrack) === -1) {
+        backgroundAudio.src = currentTrack;
     }
     backgroundAudio.play();
     backgroundAudioPaused = false;
+}
+
+/**
+ * Cambia la melodía de fondo al archivo indicado.
+ */
+function changeTrack(src) {
+    currentTrack = src;
+    if (!backgroundAudio) {
+        backgroundAudio = new Audio();
+        backgroundAudio.loop = true;
+        backgroundAudio.volume = 0.5;
+        backgroundAudio.src = currentTrack;
+        backgroundAudio.play();
+        backgroundAudioPaused = false;
+    } else {
+        var wasPaused = backgroundAudioPaused;
+        backgroundAudio.pause();
+        backgroundAudio.src = currentTrack;
+        backgroundAudio.loop = true;
+        backgroundAudio.volume = 0.5;
+        if (!wasPaused) {
+            backgroundAudio.play();
+            backgroundAudioPaused = false;
+        }
+    }
+    // Actualizar botones activos
+    var btns = document.querySelectorAll('.melody-btn');
+    for (var i = 0; i < btns.length; i++) {
+        if (btns[i].getAttribute('data-src') === src) {
+            btns[i].classList.add('melody-btn-active');
+        } else {
+            btns[i].classList.remove('melody-btn-active');
+        }
+    }
 }
 
 /**
