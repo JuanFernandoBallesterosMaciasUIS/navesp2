@@ -153,15 +153,36 @@ function preloadImages() {
  */
 function scaleCanvas() {
     if (!canvas) { return; }
-    var availableWidth = window.innerWidth - 2 * CONFIG.MIN_PANEL_WIDTH;
+    // En pantallas pequeñas reservamos menos espacio para los paneles laterales
+    // para que el juego/menú puedan ocupar casi todo el ancho.
+    var isSmallScreen = window.innerWidth <= 720;
+    var minPanel = isSmallScreen ? 0 : CONFIG.MIN_PANEL_WIDTH;
+    var availableWidth = window.innerWidth - 2 * minPanel;
     var scaleX = availableWidth / canvas.width;
     var scaleY = window.innerHeight / canvas.height;
     var scale  = Math.min(scaleX, scaleY);
     canvas.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
     var panelWidth = Math.floor((window.innerWidth - canvas.width * scale) / 2);
+    if (panelWidth < 0) { panelWidth = 0; }
     var panels = [gameLeftPanel, gameScoresPanel, mainMenuLeftPanel, mainMenuScoresPanel];
     for (var i = 0; i < panels.length; i++) {
-        if (panels[i]) { panels[i].style.width = panelWidth + 'px'; }
+        if (!panels[i]) { continue; }
+        if (isSmallScreen) {
+            // Ocultar paneles en pantallas pequeñas para evitar superposiciones
+            panels[i].style.display = 'none';
+            panels[i].style.width = '0px';
+        } else {
+            panels[i].style.display = '';
+            panels[i].style.width = panelWidth + 'px';
+        }
+    }
+    // Ajusta el overlay para que su contenido se centre en el hueco entre paneles
+    // (no en el centro de toda la pantalla), evitando superposiciones.
+    if (overlay) {
+        var overlayPad = isSmallScreen ? 10 : panelWidth;
+        overlay.style.paddingLeft = overlayPad + 'px';
+        overlay.style.paddingRight = overlayPad + 'px';
+        overlay.style.boxSizing = 'border-box';
     }
 }
 
