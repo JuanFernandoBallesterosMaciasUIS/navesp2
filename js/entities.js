@@ -159,6 +159,7 @@ function Enemy(life, shots, enemyImages) {
         if (evil.shots > 0 && !evil.dead) {
             var disparo = new EvilShot(evil.posX + (evil.image.width / 2) - 5, evil.posY + evil.image.height);
             disparo.add();
+            playSound('Sonidos/Disparo_1.mp3', 0.5);
             evil.shots--;
             setTimeout(function() {
                 shoot();
@@ -229,6 +230,7 @@ function Player(life, score) {
         if (nextPlayerShot < now || now === 0) {
             playerShot = new PlayerShot(player.posX + (player.width / 2) - 5, player.posY);
             playerShot.add();
+            playSound('Sonidos/Disparo_2.mp3', 0.6);
             now += playerShotDelay;
             nextPlayerShot = now + playerShotDelay;
         } else {

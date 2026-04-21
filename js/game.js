@@ -203,6 +203,20 @@ function stopBackgroundAudio() {
     }
 }
 
+/**
+ * Reproduce un sonido de efecto.
+ * @param {string} src - Ruta del archivo de sonido.
+ * @param {number} volume - Volumen (0-1).
+ */
+function playSound(src, volume) {
+    var sound = new Audio();
+    sound.src = src;
+    sound.volume = volume || 0.7;
+    sound.play().catch(function(err) {
+        // Silenciar errores de reproducción si el navegador no lo permite
+    });
+}
+
 /******************************* INICIALIZACIÓN *******************************/
 
 /**
@@ -642,8 +656,14 @@ function isEvilHittingPlayer() {
 function checkCollisions(shot) {
     if (shot.isHittingEvil()) {
         if (evil.life > 1) {
+            playSound('Sonidos/Boom.mp3', 1);
             evil.life--;
         } else {
+            if (evil instanceof FinalBoss) {
+                playSound('Sonidos/Boom_nave_Final.mp3', 1);
+            } else {
+                playSound('Sonidos/Boom.mp3', 1);
+            }
             evil.kill();
             player.score += evil.pointsToKill;
             onEnemyKilled();
@@ -913,7 +933,10 @@ function updateEvilShot(shot, id, dt) {
                 shot.deleteShot(parseInt(shot.identifier));
             }
         } else {
-            player.killPlayer();            onPlayerDamaged();        }
+            playSound('Sonidos/Perdida_vida.mp3', 0.8);
+            player.killPlayer();
+            onPlayerDamaged();
+        }
     }
 }
 
