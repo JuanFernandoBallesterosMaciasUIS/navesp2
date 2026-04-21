@@ -101,6 +101,7 @@ function Enemy(life, shots, enemyImages) {
     this.maxLife = this.life;
     this.speed = evilSpeed;
     this.shots = shots ? shots : evilShots;
+    this.totalShots = this.shots;
     this.dead = false;
 
     var desplazamientoHorizontal = minHorizontalOffset +
@@ -157,16 +158,26 @@ function Enemy(life, shots, enemyImages) {
         return this.posY > (canvas.height + CONFIG.EVIL_OFFSCREEN_MARGIN);
     };
 
+    this.restartShooting = function() {
+        this.shots = this.totalShots;
+        setTimeout(function() {
+            shoot();
+        }, CONFIG.EVIL_FIRST_SHOT_BASE + getRandomNumber(CONFIG.EVIL_FIRST_SHOT_EXTRA));
+    };
+
     function shoot() {
-        if (evil.shots > 0 && !evil.dead) {
-            var disparo = new EvilShot(evil.posX + (evil.image.width / 2) - 5, evil.posY + evil.image.height);
-            disparo.add();
-            playSound('Sonidos/Disparo_1.mp3', 0.5);
-            evil.shots--;
-            setTimeout(function() {
-                shoot();
-            }, getRandomNumber(CONFIG.EVIL_SHOT_INTERVAL));
+        // No disparar si el juego está en pausa, terminado o el enemigo muerto
+        if (gamePaused || youLose || congratulations || evil.dead) {
+            return;
         }
+        var disparo = new EvilShot(evil.posX + (evil.image.width / 2) - 5, evil.posY + evil.image.height);
+        disparo.add();
+        playSound('Sonidos/Disparo_1.mp3', 0.5);
+        // El delay varía aleatoriamente para que el disparo sea irregular
+        var delay = CONFIG.EVIL_SHOT_INTERVAL / 2 + getRandomNumber(CONFIG.EVIL_SHOT_INTERVAL);
+        setTimeout(function() {
+            shoot();
+        }, delay);
     }
     setTimeout(function() {
         shoot();
@@ -230,6 +241,10 @@ function Player(life, score) {
 
     var shoot = function () {
         if (nextPlayerShot < now || now === 0) {
+            // Si es el primer disparo (now === 0), inicializar con el timestamp
+            // real para que nextPlayerShot quede en el futuro correcto y no se
+            // dispare una segunda bala inmediatamente en el siguiente frame.
+            if (now === 0) { now = new Date().getTime(); }
             if (doubleFireActive) {
                 // Disparar dos proyectiles a ambos lados
                 playerShot = new PlayerShot(player.posX + (player.width / 4) - 5, player.posY);
@@ -281,7 +296,8 @@ function Player(life, score) {
             if (shieldTimeout) clearTimeout(shieldTimeout);
             if (lifeEffectTimeout) clearTimeout(lifeEffectTimeout);
             this.src = playerKilledImage.src;
-            createNewEvil();
+            // Mantener al enemigo en su posición actual y reactivar sus disparos
+            evil.restartShooting();
             setTimeout(function () {
                 player = new Player(player.life - 1, player.score);
             }, CONFIG.RESPAWN_DELAY);

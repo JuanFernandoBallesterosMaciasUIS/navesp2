@@ -560,6 +560,10 @@ function togglePause() {
             showOverlay('pause');
         } else {
             hideOverlay();
+            // Reanudar la cadena de disparos del enemigo (se detuvo por la pausa)
+            if (evil && !evil.dead && typeof evil.restartShooting === 'function') {
+                evil.restartShooting();
+            }
         }
     }
 }
