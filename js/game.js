@@ -74,6 +74,7 @@ var playButton, backButton, tutorialButton, optionsButton, quitButton, especific
 var backFromTutorialButton, backFromOptionsButton, backFromEspecificacionesButton;
 var gameOverRestartButton, gameOverMenuButton, victoryRestartButton, victoryMenuButton;
 var pauseButton, restartLevelBtn, soundToggleBtn;  // Botones de control
+var leftBtn, fireBtn, rightBtn;  // Touch controls
 var finalAnimationTick = 0;
 var gameStarted = false;
 var gamePaused = false;
@@ -108,15 +109,42 @@ function preloadImages() {
  */
 function scaleCanvas() {
     if (!canvas) { return; }
-    var availableWidth = window.innerWidth - 2 * CONFIG.MIN_PANEL_WIDTH;
-    var scaleX = availableWidth / canvas.width;
-    var scaleY = window.innerHeight / canvas.height;
-    var scale  = Math.min(scaleX, scaleY);
-    canvas.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
-    var panelWidth = Math.floor((window.innerWidth - canvas.width * scale) / 2);
-    var panels = [gameLeftPanel, gameScoresPanel, mainMenuLeftPanel, mainMenuScoresPanel];
-    for (var i = 0; i < panels.length; i++) {
-        if (panels[i]) { panels[i].style.width = panelWidth + 'px'; }
+    var isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
+    var touchControls = document.querySelector('.touch-controls');
+    
+    if (isMobile) {
+        // On mobile, make canvas full screen and show touch controls
+        canvas.style.transform = 'none';
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        if (touchControls) touchControls.classList.remove('hidden');
+        // Hide panels
+        var panels = [gameLeftPanel, gameScoresPanel, mainMenuLeftPanel, mainMenuScoresPanel];
+        for (var i = 0; i < panels.length; i++) {
+            if (panels[i]) panels[i].style.display = 'none';
+        }
+    } else {
+        // Desktop scaling
+        var availableWidth = window.innerWidth - 2 * CONFIG.MIN_PANEL_WIDTH;
+        var scaleX = availableWidth / canvas.width;
+        var scaleY = window.innerHeight / canvas.height;
+        var scale  = Math.min(scaleX, scaleY);
+        canvas.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
+        canvas.style.position = 'absolute';
+        canvas.style.width = '';
+        canvas.style.height = '';
+        var panelWidth = Math.floor((window.innerWidth - canvas.width * scale) / 2);
+        var panels = [gameLeftPanel, gameScoresPanel, mainMenuLeftPanel, mainMenuScoresPanel];
+        for (var i = 0; i < panels.length; i++) {
+            if (panels[i]) {
+                panels[i].style.display = '';
+                panels[i].style.width = panelWidth + 'px';
+            }
+        }
+        if (touchControls) touchControls.classList.add('hidden');
     }
 }
 
@@ -229,6 +257,10 @@ function init() {
     restartLevelBtn = document.getElementById('restartLevelBtn');
     soundToggleBtn = document.getElementById('soundToggleBtn');
 
+    leftBtn = document.getElementById('leftBtn');
+    fireBtn = document.getElementById('fireBtn');
+    rightBtn = document.getElementById('rightBtn');
+
     addListener(document, 'keydown', keyDown);
     addListener(document, 'keyup', keyUp);
     addListener(startButton, 'click', startGame);
@@ -300,6 +332,11 @@ function init() {
         }
     });
 
+    // Prevent default touch behaviors
+    addListener(document, 'touchstart', function(e) { if (e.target.tagName !== 'BUTTON') e.preventDefault(); });
+    addListener(document, 'touchmove', function(e) { e.preventDefault(); });
+    addListener(document, 'touchend', function(e) { e.preventDefault(); });
+
     loadAchievements();
     showOverlay('mainMenu');
 
@@ -344,6 +381,8 @@ function showOverlay(type) {
         
         // Ocultar botones de control
         document.querySelector('.header-controls').classList.add('hidden');
+        // Ocultar controles táctiles
+        document.querySelector('.touch-controls').classList.add('hidden');
     } else if (type === 'nameInput') {
         startContent.classList.remove('hidden');
         if (mainMenuScoresPanel) { mainMenuScoresPanel.classList.remove('hidden'); }
