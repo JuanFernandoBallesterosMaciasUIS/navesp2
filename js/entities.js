@@ -266,7 +266,6 @@ function FinalBoss() {
     Object.getPrototypeOf(FinalBoss.prototype).constructor.call(this, finalBossLife, finalBossShots, bossImages);
     this.goDownSpeed = evilSpeed / 2;
     this.pointsToKill = CONFIG.BOSS_POINTS;
-    this.immuneUntil = 0;  // timestamp hasta el que es inmune tras recibir daño
 
     // El jefe no reaparece desde arriba al salir de pantalla
     this.reappear = function() {};

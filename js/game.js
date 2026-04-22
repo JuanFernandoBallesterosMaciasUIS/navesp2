@@ -1047,16 +1047,10 @@ function checkCollisions(shot) {
             shot.posY >= currentEvil.posY && shot.posY <= (currentEvil.posY + currentEvil.image.height)) {
             
             if (currentEvil.life > 1) {
-                // Comprobar inmunidad del jefe
-                if (currentEvil instanceof FinalBoss && Date.now() < currentEvil.immuneUntil) {
-                    shot.deleteShot(parseInt(shot.identifier));
-                    return false;
-                }
                 playSound('Sonidos/Boom.mp3', 1);
                 currentEvil.life--;
-                // Si es el jefe: activar inmunidad 1 s y revisar cambio de fase
+                // Si es el jefe, verificar si cambió de fase y añadir esbirros
                 if (currentEvil instanceof FinalBoss) {
-                    currentEvil.immuneUntil = Date.now() + 1000;
                     checkBossPhase(currentEvil);
                 }
             } else {
@@ -1303,12 +1297,7 @@ function update(dt) {
     // Dibujar todos los enemigos activos
     for (var i = 0; i < evils.length; i++) {
         var evilToDraw = evils[i];
-        // Parpadeo del jefe durante inmunidad
-        if (evilToDraw instanceof FinalBoss && Date.now() < evilToDraw.immuneUntil) {
-            bufferctx.globalAlpha = (Math.floor(Date.now() / 80) % 2 === 0) ? 0.25 : 1.0;
-        }
         bufferctx.drawImage(evilToDraw.image, evilToDraw.posX, evilToDraw.posY);
-        bufferctx.globalAlpha = 1.0;
     }
     drawAllEnemyLifeBars();
 
