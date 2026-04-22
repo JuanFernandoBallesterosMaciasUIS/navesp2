@@ -29,6 +29,15 @@ var CONFIG = {
     BOSS_LIFE: 12,
     BOSS_SHOTS: 30,
     BOSS_POINTS: 20,
+    // Estrellita - Enemigo especial
+    STAR_LIFE: 4,
+    STAR_SHOTS: 20,
+    STAR_POINTS: 15,
+    // Cangrejo - Enemigo con movimiento libre
+    CRAB_LIFE: 3,
+    CRAB_SHOTS: 15,
+    CRAB_POINTS: 10,
+    CRAB_ANIMATION_FRAMES: 6,  // Número de frames de animación
     // Puntuaciones
     TOP_SCORES_TO_SHOW: 5,
     SCORE_LIFE_BONUS: 5,          // puntos extra por vida restante al ganar
@@ -46,21 +55,21 @@ var CONFIG = {
         1: {
             name: 'NIVEL 1',
             speedMultiplier: 0.7,
-            totalEnemies: 5,
+            totalEnemies: 1,
             baseLife: 3,
             baseShots: 4
         },
         2: {
             name: 'NIVEL 2',
             speedMultiplier: 0.9,
-            totalEnemies: 7,
+            totalEnemies: 4,
             baseLife: 4,
             baseShots: 5
         },
         3: {
             name: 'NIVEL 3',
             speedMultiplier: 1.1,
-            totalEnemies: 9,
+            totalEnemies: 4,
             baseLife: 5,
             baseShots: 6
         },

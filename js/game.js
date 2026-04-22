@@ -49,6 +49,8 @@ var evilShotImage, playerShotImage, playerKilledImage, powerVidaImage, powerDisp
 
 var evilImages  = { animation: [], killed: null };
 var bossImages  = { animation: [], killed: null };
+var starImages  = { animation: [], killed: null };  // Imágenes para la estrellita
+var crabImages  = { animation: [], killed: null };  // Imágenes para el cangrejo
 
 var backgroundAudio = null;  // Variable para el sonido de fondo
 var backgroundAudioPaused = false;  // Variable para rastrear si el sonido está pausado
@@ -139,6 +141,27 @@ function drawSlowdownOverlay() {
 /******************************* CARGA DE IMÁGENES *******************************/
 
 /**
+ * Escala una imagen a un tamaño específico creando un canvas con la imagen redimensionada.
+ * @param {HTMLImageElement} img - La imagen a escalar.
+ * @param {number} width - Ancho destino en píxeles.
+ * @param {number} height - Alto destino en píxeles.
+ * @returns {HTMLCanvasElement|HTMLImageElement} Canvas o imagen escalada.
+ */
+function scaleImage(img, width, height) {
+    if (!img || !img.complete || img.width === 0) {
+        return img;  // Retornar la imagen original si no está lista
+    }
+    
+    var scaledCanvas = document.createElement('canvas');
+    scaledCanvas.width = width;
+    scaledCanvas.height = height;
+    var ctx = scaledCanvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+    
+    return scaledCanvas;
+}
+
+/**
  * Precarga todas las imágenes del juego antes de que empiece la partida.
  * Almacena las imágenes en las variables de estado globales.
  */
@@ -149,6 +172,41 @@ function preloadImages() {
     }
     evilImages.killed  = createImage('images/malo_muerto.png');
     bossImages.killed  = createImage('images/jefe_muerto.png');
+    
+    // Cargar imagen de la estrellita y escalarla a un tamaño apropiado
+    var starImg = createImage('images/estrellita.png');
+    // Usar una imagen placeholder temporal mientras se carga
+    starImages.animation[0] = createImage('images/malo1.png');
+    starImages.killed = createImage('images/malo1.png');
+    
+    starImg.onload = function() {
+        starImages.animation[0] = scaleImage(starImg, 100, 100);
+        starImages.killed = starImages.animation[0];
+    };
+    
+    // Cargar imágenes del cangrejo (6 frames de animación) y escalarlas
+    // Usar placeholder temporal mientras se cargan
+    for (var j = 0; j < 6; j++) {
+        crabImages.animation[j] = createImage('images/malo1.png');
+    }
+    crabImages.killed = createImage('images/malo1.png');
+    
+    for (var j = 1; j <= 6; j++) {
+        var crabImg = createImage('images/Cangrejo_animacion/Cangrejo_' + j + '.png');
+        // Escalar cada frame a 80x80 píxeles
+        (function(img, index) {
+            img.onload = function() {
+                crabImages.animation[index] = scaleImage(img, 80, 80);
+            };
+        })(crabImg, j - 1);
+    }
+    
+    // Cargar imagen del cangrejo muerto
+    var crabKilledImg = createImage('images/Cangrejo_animacion/Cangrejo_1.png');
+    crabKilledImg.onload = function() {
+        crabImages.killed = scaleImage(crabKilledImg, 100, 100);
+    };
+    
     bgMain             = createImage('images/fondovertical.png');
     bgBoss             = createImage('images/fondovertical_jefe.png');
     playerShotImage    = createImage('images/disparo_bueno.png');
@@ -742,6 +800,7 @@ function startVictorySequence() {
 /** Muestra el overlay de victoria. */
 function showVictoryOverlay() {
     stopBackgroundAudio();  // Detiene el sonido de fondo
+    playSound('Sonidos/Sonido_victoria.mp3', 0.8);  // Reproduce el sonido de victoria
     showOverlay('victory');
     congratulations = false;
 }
@@ -750,11 +809,18 @@ function showVictoryOverlay() {
  * Crea el siguiente enemigo y lo asigna a la variable `evil`.
  * Crea un FinalBoss en el nivel 4; en caso contrario, crea un Evil
  * con vidas y disparos incrementados según evilCounter.
+ * Con probabilidad, puede crear una estrellita especial en niveles 2-3.
  */
 function createNewEvil() {
     if (currentLevel === 4) {
         // Nivel 4: JEFE FINAL
         evil = new FinalBoss();
+    } else if ((currentLevel === 2 || currentLevel === 3) && getRandomNumber(100) < 50) {
+        // Niveles 2-3: 25% de probabilidad de crear un cangrejo
+        evil = new Crab();
+    } else if ((currentLevel === 2 || currentLevel === 3) && getRandomNumber(100) < 35) {
+        // Niveles 2-3: 35% de probabilidad de crear una estrellita
+        evil = new Star();
     } else {
         // Niveles 1-3: Enemigos regulares
         evil = new Evil(evilLife + evilCounter - 1, evilShots + evilCounter - 1);
@@ -1598,12 +1664,33 @@ function updateEvilShot(shot, id, dt) {
     if (shot) {
         shot.identifier = id;
         if (!shot.isHittingPlayer()) {
-            if (shot.posY <= canvas.height) {
-                shot.posY += shot.speed * dt * 60;
-                bufferctx.drawImage(shot.image, shot.posX, shot.posY);
+            // Verificar si es un disparo que rebota (StarShot)
+            if (shot.velocityX !== undefined) {
+                // Es un StarShot - aplicar movimiento con rebote
+                shot.posX += shot.velocityX * dt * 60;
+                shot.posY += shot.velocityY * dt * 60;
+                
+                // Rebote en bordes laterales
+                if (shot.posX <= 0 || shot.posX >= canvas.width - shot.image.width) {
+                    shot.velocityX *= -1;  // Invertir dirección horizontal
+                }
+                
+                // Eliminar si sale de la pantalla (arriba o abajo)
+                if (shot.posY > canvas.height) {
+                    shot.deleteShot(parseInt(shot.identifier));
+                    return;
+                }
             } else {
-                shot.deleteShot(parseInt(shot.identifier));
+                // Disparo normal (no rebota)
+                shot.posY += shot.speed * dt * 60;
+                
+                if (shot.posY > canvas.height) {
+                    shot.deleteShot(parseInt(shot.identifier));
+                    return;
+                }
             }
+            
+            bufferctx.drawImage(shot.image, shot.posX, shot.posY);
         } else {
             // Solo dañar al jugador si el escudo no está activo
             if (!shieldActive) {
