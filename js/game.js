@@ -1047,10 +1047,16 @@ function checkCollisions(shot) {
             shot.posY >= currentEvil.posY && shot.posY <= (currentEvil.posY + currentEvil.image.height)) {
             
             if (currentEvil.life > 1) {
+                // Comprobar inmunidad del jefe
+                if (currentEvil instanceof FinalBoss && Date.now() < currentEvil.immuneUntil) {
+                    shot.deleteShot(parseInt(shot.identifier));
+                    return false;
+                }
                 playSound('Sonidos/Boom.mp3', 1);
                 currentEvil.life--;
-                // Si es el jefe, verificar si cambió de fase y añadir esbirros
+                // Si es el jefe: activar inmunidad 1 s y revisar cambio de fase
                 if (currentEvil instanceof FinalBoss) {
+                    currentEvil.immuneUntil = Date.now() + 1000;
                     checkBossPhase(currentEvil);
                 }
             } else {
@@ -1284,14 +1290,25 @@ function update(dt) {
         return;
     }
 
+    // Parpadeo del jugador durante inmunidad (cada 100ms alterna entre 20% y 100% de opacidad)
+    if (player.immuneUntil && Date.now() < player.immuneUntil) {
+        bufferctx.globalAlpha = (Math.floor(Date.now() / 100) % 2 === 0) ? 0.2 : 1.0;
+    }
     bufferctx.drawImage(player, player.posX, player.posY);
+    bufferctx.globalAlpha = 1.0;
     if (lifeEffectActive) drawLifeEffect();
     if (doubleFireActive) drawDoubleFirEffect();
     if (shieldActive) drawShieldEffect();
     
     // Dibujar todos los enemigos activos
     for (var i = 0; i < evils.length; i++) {
-        bufferctx.drawImage(evils[i].image, evils[i].posX, evils[i].posY);
+        var evilToDraw = evils[i];
+        // Parpadeo del jefe durante inmunidad
+        if (evilToDraw instanceof FinalBoss && Date.now() < evilToDraw.immuneUntil) {
+            bufferctx.globalAlpha = (Math.floor(Date.now() / 80) % 2 === 0) ? 0.25 : 1.0;
+        }
+        bufferctx.drawImage(evilToDraw.image, evilToDraw.posX, evilToDraw.posY);
+        bufferctx.globalAlpha = 1.0;
     }
     drawAllEnemyLifeBars();
 

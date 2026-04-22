@@ -266,10 +266,31 @@ function FinalBoss() {
     Object.getPrototypeOf(FinalBoss.prototype).constructor.call(this, finalBossLife, finalBossShots, bossImages);
     this.goDownSpeed = evilSpeed / 2;
     this.pointsToKill = CONFIG.BOSS_POINTS;
+    this.immuneUntil = 0;  // timestamp hasta el que es inmune tras recibir daño
+
+    // El jefe no reaparece desde arriba al salir de pantalla
+    this.reappear = function() {};
 }
 
 FinalBoss.prototype = Object.create(Enemy.prototype);
 FinalBoss.prototype.constructor = FinalBoss;
+
+/**
+ * Al matar al jefe, primero elimina todos los esbirros vivos para que
+ * verifyToCreateNewEvil() encuentre 0 enemigos activos y active la victoria.
+ */
+FinalBoss.prototype.kill = function() {
+    for (var i = 0; i < evils.length; i++) {
+        if (evils[i].isBossMinion && !evils[i].dead) {
+            evils[i].dead = true;
+            if (evils[i].shotTimeout) {
+                clearTimeout(evils[i].shotTimeout);
+                evils[i].shotTimeout = null;
+            }
+        }
+    }
+    Enemy.prototype.kill.call(this);
+};
 
 /**
  * Estrellita - Enemigo especial con capacidad de rebote y disparo múltiple.
@@ -616,6 +637,7 @@ function Player(life, score) {
     player.score = score;
     player.dead = false;
     player.speed = playerSpeed;
+    player.immuneUntil = 0;  // timestamp hasta el que es inmune tras recibir daño
 
     var shoot = function () {
         if (nextPlayerShot < now || now === 0) {
@@ -660,25 +682,18 @@ function Player(life, score) {
     };
 
     player.killPlayer = function() {
+        // Si el jugador está en período de inmunidad, ignorar el daño
+        if (Date.now() < this.immuneUntil) return;
+
         playSound('Sonidos/Perdida_vida.mp3', 0.8);
+
         if (this.life > 1) {
-            this.dead = true;
+            // Perder una vida sin resetear posición ni quitar poderes
+            this.life--;
+            // Activar 2 segundos de inmunidad
+            this.immuneUntil = Date.now() + 2000;
+            // Limpiar sólo los disparos enemigos activos para dar respiro
             evilShotsBuffer.splice(0, evilShotsBuffer.length);
-            playerShotsBuffer.splice(0, playerShotsBuffer.length);
-            powersBuffer.splice(0, powersBuffer.length);  // Limpiar poderes al morir
-            // Resetear efectos de poderes
-            doubleFireActive = false;
-            shieldActive = false;
-            lifeEffectActive = false;
-            if (doubleFireTimeout) clearTimeout(doubleFireTimeout);
-            if (shieldTimeout) clearTimeout(shieldTimeout);
-            if (lifeEffectTimeout) clearTimeout(lifeEffectTimeout);
-            this.src = playerKilledImage.src;
-            // Mantener al enemigo en su posición actual y reactivar sus disparos
-            evil.restartShooting();
-            setTimeout(function () {
-                player = new Player(player.life - 1, player.score);
-            }, CONFIG.RESPAWN_DELAY);
         } else {
             saveFinalScore();
             youLose = true;
