@@ -1069,7 +1069,7 @@ function checkCollisions(shot) {
             shot.posY >= currentEvil.posY && shot.posY <= (currentEvil.posY + currentEvil.image.height)) {
             
             if (currentEvil.life > 1) {
-                playSound('Sonidos/Boom.mp3', 1);
+                playSound('Sonidos/Boom.mp3', 0.4);
                 currentEvil.life--;
                 // Si es el jefe, verificar si cambió de fase y añadir esbirros
                 if (currentEvil instanceof FinalBoss) {
@@ -1077,9 +1077,9 @@ function checkCollisions(shot) {
                 }
             } else {
                 if (currentEvil instanceof FinalBoss) {
-                    playSound('Sonidos/Boom_nave_Final.mp3', 1);
+                    playSound('Sonidos/Boom_nave_Final.mp3', 0.5);
                 } else {
-                    playSound('Sonidos/Boom.mp3', 1);
+                    playSound('Sonidos/Boom.mp3', 0.4);
                 }
                 
                 // Crear chispas de explosión
@@ -2131,7 +2131,7 @@ function updateEvilShot(shot, id, dt) {
         } else {
             // Solo dañar al jugador si el escudo no está activo
             if (!shieldActive) {
-                playSound('Sonidos/Perdida_vida.mp3', 0.8);
+                playSound('Sonidos/Perdida_vida.mp3', 0.35);
                 player.killPlayer();
                 onPlayerDamaged();
             }

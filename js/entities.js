@@ -656,7 +656,7 @@ function Player(life, score) {
                 playerShot = new PlayerShot(player.posX + (player.width / 2) - 5, player.posY);
                 playerShot.add();
             }
-            playSound('Sonidos/Disparo_2.mp3', 0.6);
+            playSound('Sonidos/Disparo_2.mp3', 0.1);
             now += playerShotDelay;
             nextPlayerShot = now + playerShotDelay;
         } else {
@@ -685,7 +685,7 @@ function Player(life, score) {
         // Si el jugador está en período de inmunidad, ignorar el daño
         if (Date.now() < this.immuneUntil) return;
 
-        playSound('Sonidos/Perdida_vida.mp3', 0.8);
+        playSound('Sonidos/Perdida_vida.mp3', 0.35);
 
         if (this.life > 1) {
             // Perder una vida sin resetear posición ni quitar poderes
