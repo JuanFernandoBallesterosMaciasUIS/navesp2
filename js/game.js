@@ -97,6 +97,8 @@ var gamePaused = false;
 var levelTransitionActive = false;  // Variable para controlar la transición de nivel
 var transitionStartTime = 0;  // Tiempo de inicio de la transición
 var transitionProgress = 0;   // Progreso de la transición (0 a 1)
+var levelTransitionTimeoutId = null;  // ID del setTimeout que desactiva la transición
+var pendingLevelTimeoutId = null;     // ID del setTimeout para startNextLevel / startVictorySequence
 
 // Variables para el efecto de penalización por enemigo escapado
 var playerSlowed = false;
@@ -273,11 +275,12 @@ function initBackgroundAudio() {
     if (!backgroundAudio) {
         backgroundAudio = new Audio();
         backgroundAudio.loop = true;
-        backgroundAudio.volume = 0.5;
+        backgroundAudio.volume = getMusicVolume(currentTrack);
     }
     if (backgroundAudio.src.indexOf(currentTrack) === -1) {
         backgroundAudio.src = currentTrack;
     }
+    backgroundAudio.volume = getMusicVolume(currentTrack);
     backgroundAudio.play();
     backgroundAudioPaused = false;
 }
@@ -285,12 +288,21 @@ function initBackgroundAudio() {
 /**
  * Cambia la melodía de fondo al archivo indicado.
  */
+function getMusicVolume(src) {
+    // Melodía 2 y 3 suenan más fuerte durante el juego
+    if (src && (src.indexOf('Melodia_2') !== -1 || src.indexOf('Melodia_3') !== -1)) {
+        return 1.0;
+    }
+    return 0.2;
+}
+
 function changeTrack(src) {
     currentTrack = src;
+    var vol = getMusicVolume(src);
     if (!backgroundAudio) {
         backgroundAudio = new Audio();
         backgroundAudio.loop = true;
-        backgroundAudio.volume = 0.5;
+        backgroundAudio.volume = vol;
         backgroundAudio.src = currentTrack;
         backgroundAudio.play();
         backgroundAudioPaused = false;
@@ -299,7 +311,7 @@ function changeTrack(src) {
         backgroundAudio.pause();
         backgroundAudio.src = currentTrack;
         backgroundAudio.loop = true;
-        backgroundAudio.volume = 0.5;
+        backgroundAudio.volume = vol;
         if (!wasPaused) {
             backgroundAudio.play();
             backgroundAudioPaused = false;
@@ -355,7 +367,7 @@ function getMusicTrackForLevel(levelNumber) {
         case 1: return 'Sonidos/Melodia_1.mp3';
         case 2: return 'Sonidos/Melodia_2.mp3';
         case 3: return 'Sonidos/Melodia_3.mp3';
-        case 4: return 'Sonidos/Melodia_1.mp3';  // O puedes usar otra música para el jefe
+        case 4: return 'Sonidos/Melodia_3.mp3';
         default: return 'Sonidos/Melodia_1.mp3';
     }
 }
@@ -641,12 +653,14 @@ function restartLevel() {
     }
 
     gamePaused = false;
+    levelTransitionActive = false;
+    if (levelTransitionTimeoutId) { clearTimeout(levelTransitionTimeoutId); levelTransitionTimeoutId = null; }
+    if (pendingLevelTimeoutId)    { clearTimeout(pendingLevelTimeoutId);    pendingLevelTimeoutId = null; }
     hideOverlay();
     updateControlButtonsVisibility();
     playerShotsBuffer = [];
-    evilShotsBuffer = [];
     sparklesBuffer = [];  // Limpiar partículas de explosión
-    evils = [];  // Limpiar enemigos activos
+    killAllActiveEnemies();  // Marca enemigos muertos y limpia evils + evilShotsBuffer
     now = 0;
     nextPlayerShot = 0;
     finalAnimationTick = 0;
@@ -694,6 +708,10 @@ function resetGameState() {
     powersBuffer      = [];    // Limpiar poderes
     sparklesBuffer    = [];    // Limpiar partículas de explosión
     killAllActiveEnemies();    // Corta cadenas de disparo y limpia evils + evilShotsBuffer
+    // Cancelar transiciones y cambios de nivel pendientes para evitar que salten en la nueva partida
+    levelTransitionActive = false;
+    if (levelTransitionTimeoutId) { clearTimeout(levelTransitionTimeoutId); levelTransitionTimeoutId = null; }
+    if (pendingLevelTimeoutId)    { clearTimeout(pendingLevelTimeoutId);    pendingLevelTimeoutId = null; }
     now            = 0;
     nextPlayerShot = 0;
     finalAnimationTick = 0;
@@ -757,10 +775,12 @@ function verifyToCreateNewEvil() {
         } else {
             // Verificar si hay siguiente nivel
             if (currentLevel < 4) {
-                setTimeout(startNextLevel, CONFIG.LEVEL_TRANSITION_DELAY);
+                if (pendingLevelTimeoutId) clearTimeout(pendingLevelTimeoutId);
+                pendingLevelTimeoutId = setTimeout(startNextLevel, CONFIG.LEVEL_TRANSITION_DELAY);
             } else {
                 // Fin del juego (último nivel completado)
-                setTimeout(startVictorySequence, CONFIG.CONGRATS_DELAY);
+                if (pendingLevelTimeoutId) clearTimeout(pendingLevelTimeoutId);
+                pendingLevelTimeoutId = setTimeout(startVictorySequence, CONFIG.CONGRATS_DELAY);
             }
         }
     }
@@ -857,8 +877,10 @@ function showLevelTransition() {
     levelTransitionActive = true;
     transitionStartTime = now;
     transitionProgress = 0;
-    setTimeout(function() {
+    if (levelTransitionTimeoutId) clearTimeout(levelTransitionTimeoutId);
+    levelTransitionTimeoutId = setTimeout(function() {
         levelTransitionActive = false;
+        levelTransitionTimeoutId = null;
     }, CONFIG.LEVEL_TRANSITION_DELAY);
 }
 
