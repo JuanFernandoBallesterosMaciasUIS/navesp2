@@ -269,27 +269,28 @@ function FinalBoss() {
 
     // El jefe no reaparece desde arriba al salir de pantalla
     this.reappear = function() {};
+
+    // Sobrescribir kill como instancia (los métodos de prototipo son tapados por
+    // los de instancia, por lo que FinalBoss.prototype.kill nunca se ejecutaría)
+    var parentKill = this.kill;
+    this.kill = function() {
+        // Matar todos los esbirros vivos para que verifyToCreateNewEvil
+        // encuentre 0 enemigos activos y active la secuencia de victoria
+        for (var i = 0; i < evils.length; i++) {
+            if (evils[i].isBossMinion && !evils[i].dead) {
+                evils[i].dead = true;
+                if (evils[i].shotTimeout) {
+                    clearTimeout(evils[i].shotTimeout);
+                    evils[i].shotTimeout = null;
+                }
+            }
+        }
+        parentKill.call(this);
+    };
 }
 
 FinalBoss.prototype = Object.create(Enemy.prototype);
 FinalBoss.prototype.constructor = FinalBoss;
-
-/**
- * Al matar al jefe, primero elimina todos los esbirros vivos para que
- * verifyToCreateNewEvil() encuentre 0 enemigos activos y active la victoria.
- */
-FinalBoss.prototype.kill = function() {
-    for (var i = 0; i < evils.length; i++) {
-        if (evils[i].isBossMinion && !evils[i].dead) {
-            evils[i].dead = true;
-            if (evils[i].shotTimeout) {
-                clearTimeout(evils[i].shotTimeout);
-                evils[i].shotTimeout = null;
-            }
-        }
-    }
-    Enemy.prototype.kill.call(this);
-};
 
 /**
  * Estrellita - Enemigo especial con capacidad de rebote y disparo múltiple.
