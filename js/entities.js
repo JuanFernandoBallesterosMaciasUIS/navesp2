@@ -78,6 +78,26 @@ function EvilShot(x, y) {
 EvilShot.prototype = Object.create(Shot.prototype);
 EvilShot.prototype.constructor = EvilShot;
 
+/**
+ * Disparo de la estrellita. Hereda de EvilShot y agrega capacidad de rebote en bordes.
+ * @param {number} x - Posición horizontal inicial.
+ * @param {number} y - Posición vertical inicial.
+ * @param {number} velocityX - Velocidad horizontal (para rebote).
+ * @param {number} velocityY - Velocidad vertical (normalmente hacia abajo).
+ */
+function StarShot(x, y, velocityX, velocityY) {
+    Object.getPrototypeOf(StarShot.prototype).constructor.call(this, x, y);
+    this.velocityX = velocityX || 0;  // Velocidad horizontal para rebote
+    this.velocityY = velocityY || this.speed;  // Velocidad vertical (hacia abajo)
+    this.isHittingPlayer = function() {
+        return (this.posX >= player.posX && this.posX <= (player.posX + player.width)
+            && this.posY >= player.posY && this.posY <= (player.posY + player.height));
+    };
+}
+
+StarShot.prototype = Object.create(EvilShot.prototype);
+StarShot.prototype.constructor = StarShot;
+
 /******************************* FIN DISPAROS ********************************/
 
 
@@ -239,6 +259,316 @@ function FinalBoss() {
 
 FinalBoss.prototype = Object.create(Enemy.prototype);
 FinalBoss.prototype.constructor = FinalBoss;
+
+/**
+ * Estrellita - Enemigo especial con capacidad de rebote y disparo múltiple.
+ * Dispara principalmente desde las dos patitas inferiores a los lados.
+ * Cada 3 disparos, dispara desde todas las patitas.
+ * Se mueve por toda la pantalla y las balas rebotan en los bordes.
+ */
+function Star() {
+    Object.getPrototypeOf(Star.prototype).constructor.call(this, CONFIG.STAR_LIFE, CONFIG.STAR_SHOTS, starImages);
+    this.goDownSpeed = evilSpeed * 0.8;  // Movimiento más lento
+    this.pointsToKill = CONFIG.STAR_POINTS;
+    this.shotCount = 0;  // Contador de disparos para control de patrón
+    this.shotTimeout = null;  // Referencia al timeout de disparos para limpiarlo después
+    this.allowFullScreenMovement = true;  // Permite movimiento por toda la pantalla
+    this.minY = 0;  // Puede llegar hasta arriba
+    this.maxY = canvas.height * 0.7;  // Puede llegar más abajo
+    this.maxX = this.minX + 200;  // Rango de movimiento horizontal limitado
+    
+    var self = this;
+    
+    // Sobrescribir el método update para Star (sin animación de múltiples frames)
+    this.update = function(dt) {
+        // Movimiento vertical con rebote
+        if (this.posY < this.minY) {
+            this.posY += this.goDownSpeed * dt * 60;
+            this.vertDirection = 'D';
+        } else if (this.vertDirection === 'D') {
+            if (this.posY < this.maxY) {
+                this.posY += this.goDownSpeed * dt * 60;
+            } else {
+                this.vertDirection = 'U';
+                this.posY -= this.goDownSpeed * dt * 60;
+            }
+        } else {
+            if (this.posY > this.minY) {
+                this.posY -= this.goDownSpeed * dt * 60;
+            } else {
+                this.vertDirection = 'D';
+                this.posY += this.goDownSpeed * dt * 60;
+            }
+        }
+        
+        // Movimiento horizontal
+        if (this.direction === 'D') {
+            if (this.posX <= this.maxX) {
+                this.posX += this.speed * dt * 60;
+            } else {
+                this.direction = 'I';
+                this.posX -= this.speed * dt * 60;
+            }
+        } else {
+            if (this.posX >= this.minX) {
+                this.posX -= this.speed * dt * 60;
+            } else {
+                this.direction = 'D';
+                this.posX += this.speed * dt * 60;
+            }
+        }
+        
+        // Sin animación de múltiples frames para la estrellita
+        this.image = starImages.animation[0];
+    };
+    
+    // Sobrescribir el método restartShooting con lógica especial para la estrellita
+    this.restartShooting = function() {
+        // Limpiar timeout anterior si existe
+        if (self.shotTimeout) {
+            clearTimeout(self.shotTimeout);
+            self.shotTimeout = null;
+        }
+        self.shots = self.totalShots;
+        self.shotCount = 0;
+        var firstDelay = CONFIG.EVIL_FIRST_SHOT_BASE + getRandomNumber(CONFIG.EVIL_FIRST_SHOT_EXTRA);
+        self.shotTimeout = setTimeout(function() {
+            starShoot();
+        }, firstDelay);
+    };
+    
+    function starShoot() {
+        // No disparar si el juego está en pausa, terminado o el enemigo muerto
+        if (gamePaused || youLose || congratulations || evil.dead || !(evil instanceof Star)) {
+            self.shotTimeout = null;
+            return;
+        }
+        
+        var centerX = self.posX + (self.image.width / 2);
+        var bottomY = self.posY + self.image.height;
+        var offsetX = (self.image.width / 3);
+        
+        // Contar disparos para saber cuándo hacer disparo con todas las patitas
+        self.shotCount++;
+        
+        if (self.shotCount % 3 === 0) {
+            // Cada 3 disparos: disparar desde todas las patitas (6 posiciones)
+            // 2 patitas superiores
+            createStarShot(centerX - offsetX * 1.5, self.posY + 5, -2, 3);
+            createStarShot(centerX + offsetX * 1.5, self.posY + 5, 2, 3);
+            // 2 patitas laterales intermedias
+            createStarShot(self.posX - 5, centerX, -3, 2);
+            createStarShot(self.posX + self.image.width + 5, centerX, 3, 2);
+            // 2 patitas inferiores (principales)
+            createStarShot(centerX - offsetX, bottomY, -2, 3);
+            createStarShot(centerX + offsetX, bottomY, 2, 3);
+        } else {
+            // Disparar desde las dos patitas inferiores a los lados
+            createStarShot(centerX - offsetX, bottomY, -1.5, 3);
+            createStarShot(centerX + offsetX, bottomY, 1.5, 3);
+        }
+        
+        playSound('Sonidos/Disparo_1.mp3', 0.5);
+        
+        // Programar el siguiente disparo
+        var delay = CONFIG.EVIL_SHOT_INTERVAL / 2 + getRandomNumber(CONFIG.EVIL_SHOT_INTERVAL);
+        self.shotTimeout = setTimeout(function() {
+            starShoot();
+        }, delay);
+    }
+    
+    function createStarShot(x, y, velocityX, velocityY) {
+        var disparo = new StarShot(x, y, velocityX, velocityY);
+        disparo.add();
+    }
+    
+    // Iniciar los disparos de la estrellita
+    this.restartShooting();
+}
+
+Star.prototype = Object.create(Enemy.prototype);
+Star.prototype.constructor = Star;
+
+/**
+ * Sobrescribir método kill para la Estrellita: limpia el timeout de disparos antes de matar
+ */
+Star.prototype.kill = function() {
+    // Limpiar timeout de disparos de la estrellita
+    if (this.shotTimeout) {
+        clearTimeout(this.shotTimeout);
+        this.shotTimeout = null;
+    }
+    // Llamar al método kill de la clase padre
+    Enemy.prototype.kill.call(this);
+};
+
+/**
+ * Cangrejo - Enemigo con movimiento libre en todas direcciones.
+ * Se mueve rápido en línea recta (izquierda, derecha, arriba, abajo) sin salirse de pantalla.
+ * Dispara 2 balas por cada una de sus escopetas (4 balas totales por disparo).
+ * Tiene animación de 6 frames.
+ */
+function Crab() {
+    Object.getPrototypeOf(Crab.prototype).constructor.call(this, CONFIG.CRAB_LIFE, CONFIG.CRAB_SHOTS, crabImages);
+    this.goDownSpeed = evilSpeed * 1.2;  // Movimiento rápido
+    this.pointsToKill = CONFIG.CRAB_POINTS;
+    this.shotCount = 0;
+    this.shotTimeout = null;  // Referencia al timeout de disparos para limpiarlo después
+    
+    // Movimiento libre: elegir dirección aleatoria
+    var directions = ['U', 'D', 'L', 'R'];
+    this.moveDirection = directions[Math.floor(Math.random() * directions.length)];
+    this.nextDirectionChange = Math.random() * 3000 + 2000;  // Cambiar dirección cada 2-5 segundos
+    this.directionChangeTimer = 0;
+    
+    // Restricciones de movimiento: mantener distancia del jugador
+    this.minX = 5;
+    this.maxX = canvas.width - 100;
+    this.minY = 30;
+    this.maxY = Math.floor(canvas.height * 0.65);  // No bajar más del 65% de la pantalla para evitar colisión con jugador
+    
+    var self = this;
+    
+    // Sobrescribir método update para movimiento libre
+    this.update = function(dt) {
+        // Cambiar dirección aleatoriamente
+        self.directionChangeTimer += dt * 1000;
+        if (self.directionChangeTimer >= self.nextDirectionChange) {
+            var directions = ['U', 'D', 'L', 'R'];
+            self.moveDirection = directions[Math.floor(Math.random() * directions.length)];
+            self.directionChangeTimer = 0;
+            self.nextDirectionChange = Math.random() * 3000 + 2000;
+        }
+        
+        // Aplicar movimiento según la dirección
+        var moveSpeed = self.goDownSpeed * dt * 60;
+        
+        switch(self.moveDirection) {
+            case 'U':  // Arriba
+                if (self.posY > self.minY) {
+                    self.posY -= moveSpeed;
+                } else {
+                    self.moveDirection = 'D';
+                }
+                break;
+            case 'D':  // Abajo
+                if (self.posY < self.maxY) {
+                    self.posY += moveSpeed;
+                } else {
+                    self.moveDirection = 'U';
+                }
+                break;
+            case 'L':  // Izquierda
+                if (self.posX > self.minX) {
+                    self.posX -= moveSpeed;
+                } else {
+                    self.moveDirection = 'R';
+                }
+                break;
+            case 'R':  // Derecha
+                if (self.posX < self.maxX) {
+                    self.posX += moveSpeed;
+                } else {
+                    self.moveDirection = 'L';
+                }
+                break;
+        }
+        
+        // Animación: cambiar frame cada intervalo
+        self.animation += dt * 60;
+        if (self.animation > CONFIG.EVIL_ANIMATION_INTERVAL) {
+            self.animation = 0;
+            self.imageNumber++;
+            if (self.imageNumber > CONFIG.CRAB_ANIMATION_FRAMES) {
+                self.imageNumber = 1;
+            }
+            self.image = crabImages.animation[self.imageNumber - 1];
+        }
+    };
+    
+    // Sobrescribir método restartShooting para disparos múltiples
+    this.restartShooting = function() {
+        // Limpiar timeout anterior si existe
+        if (self.shotTimeout) {
+            clearTimeout(self.shotTimeout);
+            self.shotTimeout = null;
+        }
+        self.shots = self.totalShots;
+        self.shotCount = 0;
+        var firstDelay = CONFIG.EVIL_FIRST_SHOT_BASE + getRandomNumber(CONFIG.EVIL_FIRST_SHOT_EXTRA);
+        self.shotTimeout = setTimeout(function() {
+            crabShoot();
+        }, firstDelay);
+    };
+    
+    function crabShoot() {
+        // No disparar si el juego está en pausa, terminado o el enemigo muerto
+        if (gamePaused || youLose || congratulations || evil.dead || !(evil instanceof Crab)) {
+            self.shotTimeout = null;
+            return;
+        }
+        
+        // Validar que el cangrejo tenga una imagen cargada correctamente
+        if (!self.image || !self.image.width || self.image.width < 10) {
+            // Reintentar disparo si la imagen no está lista
+            var delay = 500; // Reintentar en 500ms
+            self.shotTimeout = setTimeout(function() {
+                crabShoot();
+            }, delay);
+            return;
+        }
+        
+        var centerX = self.posX + (self.image.width / 2);
+        var centerY = self.posY + (self.image.height / 2);
+        var offsetX = (self.image.width / 4);
+        var offsetY = (self.image.height / 4);
+        
+        // Disparar 2 balas por cada escopeta (4 balas totales)
+        // Escopeta izquierda - 2 balas
+        createCrabShot(centerX - offsetX, centerY - offsetY);
+        createCrabShot(centerX - offsetX, centerY + offsetY);
+        
+        // Escopeta derecha - 2 balas
+        createCrabShot(centerX + offsetX, centerY - offsetY);
+        createCrabShot(centerX + offsetX, centerY + offsetY);
+        
+        playSound('Sonidos/Disparo_1.mp3', 0.5);
+        
+        // Programar el siguiente disparo
+        var delay = CONFIG.EVIL_SHOT_INTERVAL / 2 + getRandomNumber(CONFIG.EVIL_SHOT_INTERVAL);
+        self.shotTimeout = setTimeout(function() {
+            crabShoot();
+        }, delay);
+    }
+    
+    function createCrabShot(x, y) {
+        // Validar que el disparo esté dentro de los límites de pantalla y sea razonable
+        if (x < 0 || x > canvas.width || y < 0 || y > canvas.height) {
+            return; // No crear disparos fuera de pantalla
+        }
+        var disparo = new EvilShot(x, y);
+        disparo.add();
+    }
+    
+    // Iniciar los disparos del cangrejo
+    this.restartShooting();
+}
+
+Crab.prototype = Object.create(Enemy.prototype);
+Crab.prototype.constructor = Crab;
+
+/**
+ * Sobrescribir método kill para el Crab: limpia el timeout de disparos antes de matar
+ */
+Crab.prototype.kill = function() {
+    // Limpiar timeout de disparos del cangrejo
+    if (this.shotTimeout) {
+        clearTimeout(this.shotTimeout);
+        this.shotTimeout = null;
+    }
+    // Llamar al método kill de la clase padre
+    Enemy.prototype.kill.call(this);
+};
 
 /******************************* FIN ENEMIGOS *******************************/
 
