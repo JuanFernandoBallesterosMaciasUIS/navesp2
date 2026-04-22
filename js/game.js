@@ -613,10 +613,18 @@ function updatePauseButtonLabel() {
     }
 }
 
+function updateControlButtonsVisibility() {
+    var visibility = gamePaused ? 'hidden' : 'visible';
+    if (restartLevelBtn) restartLevelBtn.style.visibility = visibility;
+    if (soundToggleBtn) soundToggleBtn.style.visibility = visibility;
+    if (pauseButton) pauseButton.style.visibility = visibility;
+}
+
 function togglePause() {
     if (gameStarted && !youLose && !congratulations) {
         gamePaused = !gamePaused;
         updatePauseButtonLabel();
+        updateControlButtonsVisibility();
         if (gamePaused) {
             showOverlay('pause');
         } else {
@@ -636,6 +644,7 @@ function restartLevel() {
 
     gamePaused = false;
     hideOverlay();
+    updateControlButtonsVisibility();
     playerShotsBuffer = [];
     evilShotsBuffer = [];
     sparklesBuffer = [];  // Limpiar partículas de explosión
