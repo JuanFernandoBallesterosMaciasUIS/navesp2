@@ -742,6 +742,7 @@ function startVictorySequence() {
 /** Muestra el overlay de victoria. */
 function showVictoryOverlay() {
     stopBackgroundAudio();  // Detiene el sonido de fondo
+    playSound('Sonidos/Sonido_victoria.mp3', 0.8);  // Reproduce el sonido de victoria
     showOverlay('victory');
     congratulations = false;
 }
