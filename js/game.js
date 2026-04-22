@@ -22,6 +22,7 @@
 
 var canvas, ctx, buffer, bufferctx;
 var player, evil, playerShot;
+var evils = [];  // Array de enemigos activos simultáneamente
 var bgMain, bgBoss;
 
 var evilSpeed     = CONFIG.EVIL_BASE_SPEED;
@@ -45,10 +46,13 @@ var totalBestScoresToShow = CONFIG.TOP_SCORES_TO_SHOW;
 var playerShotsBuffer = [];
 var evilShotsBuffer   = [];
 var powersBuffer      = [];    // Buffer para los poderes que caen
+var sparklesBuffer    = [];    // Buffer para las partículas de explosión
 var evilShotImage, playerShotImage, playerKilledImage, powerVidaImage, powerDisparoImage, powerEscudoImage;
 
 var evilImages  = { animation: [], killed: null };
 var bossImages  = { animation: [], killed: null };
+var starImages  = { animation: [], killed: null };  // Imágenes para la estrellita
+var crabImages  = { animation: [], killed: null };  // Imágenes para el cangrejo
 
 var backgroundAudio = null;  // Variable para el sonido de fondo
 var backgroundAudioPaused = false;  // Variable para rastrear si el sonido está pausado
@@ -139,6 +143,27 @@ function drawSlowdownOverlay() {
 /******************************* CARGA DE IMÁGENES *******************************/
 
 /**
+ * Escala una imagen a un tamaño específico creando un canvas con la imagen redimensionada.
+ * @param {HTMLImageElement} img - La imagen a escalar.
+ * @param {number} width - Ancho destino en píxeles.
+ * @param {number} height - Alto destino en píxeles.
+ * @returns {HTMLCanvasElement|HTMLImageElement} Canvas o imagen escalada.
+ */
+function scaleImage(img, width, height) {
+    if (!img || !img.complete || img.width === 0) {
+        return img;  // Retornar la imagen original si no está lista
+    }
+    
+    var scaledCanvas = document.createElement('canvas');
+    scaledCanvas.width = width;
+    scaledCanvas.height = height;
+    var ctx = scaledCanvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+    
+    return scaledCanvas;
+}
+
+/**
  * Precarga todas las imágenes del juego antes de que empiece la partida.
  * Almacena las imágenes en las variables de estado globales.
  */
@@ -149,6 +174,41 @@ function preloadImages() {
     }
     evilImages.killed  = createImage('images/malo_muerto.png');
     bossImages.killed  = createImage('images/jefe_muerto.png');
+    
+    // Cargar imagen de la estrellita y escalarla a un tamaño apropiado
+    var starImg = createImage('images/estrellita.png');
+    // Usar una imagen placeholder temporal mientras se carga
+    starImages.animation[0] = createImage('images/malo1.png');
+    starImages.killed = createImage('images/malo1.png');
+    
+    starImg.onload = function() {
+        starImages.animation[0] = scaleImage(starImg, 100, 100);
+        starImages.killed = starImages.animation[0];
+    };
+    
+    // Cargar imágenes del cangrejo (6 frames de animación) y escalarlas
+    // Usar placeholder temporal mientras se cargan
+    for (var j = 0; j < 6; j++) {
+        crabImages.animation[j] = createImage('images/malo1.png');
+    }
+    crabImages.killed = createImage('images/malo1.png');
+    
+    for (var j = 1; j <= 6; j++) {
+        var crabImg = createImage('images/Cangrejo_animacion/Cangrejo_' + j + '.png');
+        // Escalar cada frame a 80x80 píxeles
+        (function(img, index) {
+            img.onload = function() {
+                crabImages.animation[index] = scaleImage(img, 80, 80);
+            };
+        })(crabImg, j - 1);
+    }
+    
+    // Cargar imagen del cangrejo muerto
+    var crabKilledImg = createImage('images/Cangrejo_animacion/Cangrejo_1.png');
+    crabKilledImg.onload = function() {
+        crabImages.killed = scaleImage(crabKilledImg, 100, 100);
+    };
+    
     bgMain             = createImage('images/fondovertical.png');
     bgBoss             = createImage('images/fondovertical_jefe.png');
     playerShotImage    = createImage('images/disparo_bueno.png');
@@ -578,6 +638,8 @@ function restartLevel() {
     hideOverlay();
     playerShotsBuffer = [];
     evilShotsBuffer = [];
+    sparklesBuffer = [];  // Limpiar partículas de explosión
+    evils = [];  // Limpiar enemigos activos
     now = 0;
     nextPlayerShot = 0;
     finalAnimationTick = 0;
@@ -624,6 +686,8 @@ function resetGameState() {
     playerShotsBuffer = [];
     evilShotsBuffer   = [];
     powersBuffer      = [];    // Limpiar poderes
+    sparklesBuffer    = [];    // Limpiar partículas de explosión
+    evils             = [];    // Limpiar enemigos activos
     now            = 0;
     nextPlayerShot = 0;
     finalAnimationTick = 0;
@@ -665,20 +729,30 @@ function applyLevelConfiguration(levelNumber) {
 /******************************* GESTIÓN DE ENEMIGOS *******************************/
 
 /**
- * Decide qué ocurre tras matar a un enemigo:
- * - Si quedan enemigos, programa la creación del siguiente con un retardo aleatorio.
- * - Si no quedan, verifica si hay más niveles o inicia la secuencia de victoria.
+ * Verifica si todos los enemigos activos han sido eliminados.
+ * Si todos están muertos, programa la creación del siguiente lote de enemigos.
  */
 function verifyToCreateNewEvil() {
-    if (totalEvils > 0) {
-        setTimeout(spawnNextEvil, getRandomNumber(CONFIG.NEW_EVIL_MAX_DELAY));
-    } else {
-        // Verificar si hay siguiente nivel
-        if (currentLevel < 4) {
-            setTimeout(startNextLevel, CONFIG.LEVEL_TRANSITION_DELAY);
+    // Contar enemigos vivos
+    var aliveEnemies = 0;
+    for (var i = 0; i < evils.length; i++) {
+        if (!evils[i].dead) {
+            aliveEnemies++;
+        }
+    }
+    
+    // Si no hay enemigos vivos, crear el siguiente
+    if (aliveEnemies === 0) {
+        if (totalEvils > 0) {
+            setTimeout(spawnNextEvil, getRandomNumber(CONFIG.NEW_EVIL_MAX_DELAY));
         } else {
-            // Fin del juego (último nivel completado)
-            setTimeout(startVictorySequence, CONFIG.CONGRATS_DELAY);
+            // Verificar si hay siguiente nivel
+            if (currentLevel < 4) {
+                setTimeout(startNextLevel, CONFIG.LEVEL_TRANSITION_DELAY);
+            } else {
+                // Fin del juego (último nivel completado)
+                setTimeout(startVictorySequence, CONFIG.CONGRATS_DELAY);
+            }
         }
     }
 }
@@ -700,6 +774,8 @@ function startNextLevel() {
     playerShotsBuffer = [];
     evilShotsBuffer = [];
     powersBuffer = [];   // Limpiar poderes al cambiar de nivel
+    sparklesBuffer = []; // Limpiar partículas de explosión al cambiar de nivel
+    evils = [];          // Limpiar enemigos activos al cambiar de nivel
     // Resetear efectos de poderes
     doubleFireActive = false;
     shieldActive = false;
@@ -742,6 +818,7 @@ function startVictorySequence() {
 /** Muestra el overlay de victoria. */
 function showVictoryOverlay() {
     stopBackgroundAudio();  // Detiene el sonido de fondo
+    playSound('Sonidos/Sonido_victoria.mp3', 0.8);  // Reproduce el sonido de victoria
     showOverlay('victory');
     congratulations = false;
 }
@@ -750,14 +827,38 @@ function showVictoryOverlay() {
  * Crea el siguiente enemigo y lo asigna a la variable `evil`.
  * Crea un FinalBoss en el nivel 4; en caso contrario, crea un Evil
  * con vidas y disparos incrementados según evilCounter.
+ * Con probabilidad, puede crear una estrellita especial en niveles 2-3.
  */
 function createNewEvil() {
-    if (currentLevel === 4) {
-        // Nivel 4: JEFE FINAL
-        evil = new FinalBoss();
-    } else {
-        // Niveles 1-3: Enemigos regulares
-        evil = new Evil(evilLife + evilCounter - 1, evilShots + evilCounter - 1);
+    // Determinar cantidad de enemigos a crear
+    var enemyCount = 1;
+    
+    // Si restan 4 o menos enemigos, crear 2-3 enemigos en lugar de 1
+    if (totalEvils <= 4) {
+        enemyCount = Math.random() < 0.5 ? 2 : 3;
+        enemyCount = Math.min(enemyCount, totalEvils);  // No crear más de los que quedan
+    }
+    
+    for (var i = 0; i < enemyCount; i++) {
+        var newEvil;
+        if (currentLevel === 4) {
+            // Nivel 4: JEFE FINAL (siempre uno)
+            newEvil = new FinalBoss();
+        } else if ((currentLevel === 2 || currentLevel === 3) && getRandomNumber(100) < 50) {
+            // Niveles 2-3: 50% de probabilidad de crear un cangrejo
+            newEvil = new Crab();
+        } else if ((currentLevel === 2 || currentLevel === 3) && getRandomNumber(100) < 35) {
+            // Niveles 2-3: 35% de probabilidad de crear una estrellita
+            newEvil = new Star();
+        } else {
+            // Niveles 1-3: Enemigos regulares
+            newEvil = new Evil(evilLife + evilCounter - 1, evilShots + evilCounter - 1);
+        }
+        
+        evils.push(newEvil);
+        if (i === 0) {
+            evil = newEvil;  // Mantener compatibilidad con la variable evil
+        }
     }
 }
 
@@ -768,37 +869,59 @@ function createNewEvil() {
  * @returns {boolean} true si el enemigo está tocando al jugador.
  */
 function isEvilHittingPlayer() {
-    return (((evil.posY + evil.image.height) > player.posY && (player.posY + player.height) >= evil.posY) &&
-        ((player.posX >= evil.posX && player.posX <= (evil.posX + evil.image.width)) ||
-            (player.posX + player.width >= evil.posX && (player.posX + player.width) <= (evil.posX + evil.image.width))));
+    // Verificar si alguno de los enemigos activos está tocando al jugador
+    for (var i = 0; i < evils.length; i++) {
+        var e = evils[i];
+        if (!e.dead && ((e.posY + e.image.height) > player.posY && (player.posY + player.height) >= e.posY) &&
+            ((player.posX >= e.posX && player.posX <= (e.posX + e.image.width)) ||
+                (player.posX + player.width >= e.posX && (player.posX + player.width) <= (e.posX + e.image.width)))) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
- * Verifica si un disparo del jugador impactó al enemigo activo.
+ * Verifica si un disparo del jugador impactó algún enemigo activo.
  * Si hay impacto: reduce la vida del enemigo (o lo mata) y elimina el disparo.
  * Si mata al enemigo, hay probabilidad de crear un poder aleatorio.
  * @param {PlayerShot} shot - El disparo a evaluar.
  * @returns {boolean} false si hubo impacto; true si el disparo puede continuar.
  */
 function checkCollisions(shot) {
-    if (shot.isHittingEvil()) {
-        if (evil.life > 1) {
-            playSound('Sonidos/Boom.mp3', 1);
-            evil.life--;
-        } else {
-            if (evil instanceof FinalBoss) {
-                playSound('Sonidos/Boom_nave_Final.mp3', 1);
-            } else {
+    // Verificar colisión con cada enemigo activo
+    for (var i = evils.length - 1; i >= 0; i--) {
+        var currentEvil = evils[i];
+        if (!currentEvil.dead && shot.posX >= currentEvil.posX && shot.posX <= (currentEvil.posX + currentEvil.image.width) &&
+            shot.posY >= currentEvil.posY && shot.posY <= (currentEvil.posY + currentEvil.image.height)) {
+            
+            if (currentEvil.life > 1) {
                 playSound('Sonidos/Boom.mp3', 1);
+                currentEvil.life--;
+            } else {
+                if (currentEvil instanceof FinalBoss) {
+                    playSound('Sonidos/Boom_nave_Final.mp3', 1);
+                } else {
+                    playSound('Sonidos/Boom.mp3', 1);
+                }
+                
+                // Crear chispas de explosión
+                var centerX = currentEvil.posX + currentEvil.image.width / 2;
+                var centerY = currentEvil.posY + currentEvil.image.height / 2;
+                createExplosionSparkles(centerX, centerY);
+                
+                currentEvil.kill();
+                player.score += currentEvil.pointsToKill;
+                // Crear poder aleatorio al matar un enemigo
+                createRandomPower(currentEvil.posX + currentEvil.image.width / 2, currentEvil.posY);
+                onEnemyKilled();
+                
+                // Remover enemigo muerto del array si ha estado muerto un tiempo
+                // Lo dejamos por ahora para que se muestre la animación de muerte
             }
-            evil.kill();
-            player.score += evil.pointsToKill;
-            // Crear poder aleatorio al matar un enemigo
-            createRandomPower(evil.posX + evil.image.width / 2, evil.posY);
-            onEnemyKilled();
+            shot.deleteShot(parseInt(shot.identifier));
+            return false;
         }
-        shot.deleteShot(parseInt(shot.identifier));
-        return false;
     }
     return true;
 }
@@ -982,8 +1105,11 @@ function update(dt) {
         if (lifeEffectActive) drawLifeEffect();
         if (doubleFireActive) drawDoubleFirEffect();
         if (shieldActive) drawShieldEffect();
-        bufferctx.drawImage(evil.image, evil.posX, evil.posY);
-        drawEnemyLifeBar();
+        // Dibujar todos los enemigos activos
+        for (var i = 0; i < evils.length; i++) {
+            bufferctx.drawImage(evils[i].image, evils[i].posX, evils[i].posY);
+        }
+        drawAllEnemyLifeBars();
         showLifeAndScore();
         return;
     }
@@ -1000,10 +1126,14 @@ function update(dt) {
     if (lifeEffectActive) drawLifeEffect();
     if (doubleFireActive) drawDoubleFirEffect();
     if (shieldActive) drawShieldEffect();
-    bufferctx.drawImage(evil.image, evil.posX, evil.posY);
-    drawEnemyLifeBar();
+    
+    // Dibujar todos los enemigos activos
+    for (var i = 0; i < evils.length; i++) {
+        bufferctx.drawImage(evils[i].image, evils[i].posX, evils[i].posY);
+    }
+    drawAllEnemyLifeBars();
 
-    updateEvil(dt);
+    updateAllEvils(dt);
     updateSlowdownEffect();  // Actualizar efecto de lentitud
 
     // Actualizar y renderizar poderes
@@ -1011,6 +1141,9 @@ function update(dt) {
         updatePower(powersBuffer[p], p, dt);
     }
     checkPowerCollisions();
+
+    // Actualizar y renderizar partículas de explosión
+    updateSparkles(dt);
 
     for (var j = 0; j < playerShotsBuffer.length; j++) {
         updatePlayerShot(playerShotsBuffer[j], j, dt);
@@ -1030,7 +1163,37 @@ function update(dt) {
     playerAction(dt);
 }
 
-/******************************* RENDERIZADO *******************************/
+/**
+ * Dibuja las barras de vida para todos los enemigos activos.
+ */
+function drawAllEnemyLifeBars() {
+    for (var i = 0; i < evils.length; i++) {
+        var e = evils[i];
+        if (!e.dead) {
+            var barWidth = 60;
+            var barHeight = 8;
+            var barX = e.posX + (e.image.width - barWidth) / 2;
+            var barY = e.posY - 15;
+            
+            var lifePercent = e.life / e.maxLife;
+            var filledWidth = barWidth * lifePercent;
+            
+            // Dibujar fondo
+            bufferctx.fillStyle = '#333333';
+            bufferctx.fillRect(barX, barY, barWidth, barHeight);
+            
+            // Dibujar barra de vida
+            var hue = lifePercent * 120;
+            bufferctx.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+            bufferctx.fillRect(barX, barY, filledWidth, barHeight);
+            
+            // Dibujar borde
+            bufferctx.strokeStyle = '#FFFFFF';
+            bufferctx.lineWidth = 1;
+            bufferctx.strokeRect(barX, barY, barWidth, barHeight);
+        }
+    }
+}
 
 /** Dibuja el marcador de vidas y puntos en la esquina superior derecha del buffer. */
 /** Dibuja la barra de vida encima del enemigo. */
@@ -1085,6 +1248,11 @@ function showLifeAndScore() {
     bufferctx.font = 'bold 12px Arial';
     var enemyText = 'Enemigos: ' + totalEvils + (currentLevel === 4 ? ' (JEFE)' : '');
     bufferctx.fillText(enemyText, 10, 40);
+
+    // Mostrar total de bajas acumuladas en la sesión
+    bufferctx.fillStyle = '#FFA07A';
+    bufferctx.font = 'bold 12px Arial';
+    bufferctx.fillText('Bajas: ' + sessionKills, 10, 57);
     
     // Dibujar corazones rojos en lugar de número de vidas
     bufferctx.textAlign = 'right';
@@ -1098,7 +1266,7 @@ function showLifeAndScore() {
     
     // Mostrar indicadores de efectos activos
     bufferctx.textAlign = 'left';
-    var yOffset = 60;
+    var yOffset = 75;
     if (doubleFireActive) {
         bufferctx.fillStyle = '#FFD93D';
         bufferctx.font = 'bold 14px Arial';
@@ -1681,6 +1849,33 @@ function updateEvil(dt) {
 }
 
 /**
+ * Actualiza todos los enemigos activos y elimina los muertos del array.
+ */
+function updateAllEvils(dt) {
+    for (var i = evils.length - 1; i >= 0; i--) {
+        var currentEvil = evils[i];
+        if (!currentEvil.dead) {
+            currentEvil.update(dt);
+            if (currentEvil.isOutOfScreen()) {
+                applySlowdownPenalty();
+                currentEvil.reappear();
+            }
+        } else {
+            // Rastrear tiempo desde la muerte
+            if (!currentEvil.deathTime) {
+                currentEvil.deathTime = 0;
+            }
+            currentEvil.deathTime += dt;
+            
+            // Remover enemigo muerto después de 0.5 segundos (para que se muestren las chispas)
+            if (currentEvil.deathTime >= 0.5) {
+                evils.splice(i, 1);
+            }
+        }
+    }
+}
+
+/**
  * Actualiza un disparo del jugador: mueve hacia arriba, detecta colisión con el enemigo
  * y lo elimina si sale de pantalla o impacta.
  * @param {PlayerShot} shot - El proyectil a actualizar.
@@ -1710,12 +1905,33 @@ function updateEvilShot(shot, id, dt) {
     if (shot) {
         shot.identifier = id;
         if (!shot.isHittingPlayer()) {
-            if (shot.posY <= canvas.height) {
-                shot.posY += shot.speed * dt * 60;
-                bufferctx.drawImage(shot.image, shot.posX, shot.posY);
+            // Verificar si es un disparo que rebota (StarShot)
+            if (shot.velocityX !== undefined) {
+                // Es un StarShot - aplicar movimiento con rebote
+                shot.posX += shot.velocityX * dt * 60;
+                shot.posY += shot.velocityY * dt * 60;
+                
+                // Rebote en bordes laterales
+                if (shot.posX <= 0 || shot.posX >= canvas.width - shot.image.width) {
+                    shot.velocityX *= -1;  // Invertir dirección horizontal
+                }
+                
+                // Eliminar si sale de la pantalla (arriba o abajo)
+                if (shot.posY > canvas.height) {
+                    shot.deleteShot(parseInt(shot.identifier));
+                    return;
+                }
             } else {
-                shot.deleteShot(parseInt(shot.identifier));
+                // Disparo normal (no rebota)
+                shot.posY += shot.speed * dt * 60;
+                
+                if (shot.posY > canvas.height) {
+                    shot.deleteShot(parseInt(shot.identifier));
+                    return;
+                }
             }
+            
+            bufferctx.drawImage(shot.image, shot.posX, shot.posY);
         } else {
             // Solo dañar al jugador si el escudo no está activo
             if (!shieldActive) {
@@ -1766,6 +1982,70 @@ function updatePower(power, id, dt) {
     bufferctx.strokeStyle = '#FFFFFF';
     bufferctx.lineWidth = 2;
     bufferctx.strokeRect(power.posX, power.posY, power.width, power.height);
+}
+
+/**
+ * Crea chispas de explosión cuando muere un enemigo.
+ * @param {number} x - Posición horizontal del centro de la explosión.
+ * @param {number} y - Posición vertical del centro de la explosión.
+ */
+function createExplosionSparkles(x, y) {
+    var sparkleCount = 12 + getRandomNumber(8);  // 12-20 chispas
+    var colors = ['#FFD700', '#FFA500', '#FF6B6B', '#FF4500', '#FFD93D'];
+    
+    for (var i = 0; i < sparkleCount; i++) {
+        var angle = (Math.PI * 2 * i) / sparkleCount + (Math.random() - 0.5);
+        var speed = 3 + Math.random() * 5;
+        var life = 0.3 + Math.random() * 0.7;  // 0.3 a 1 segundo
+        
+        var sparkle = {
+            posX: x + Math.cos(angle) * 5,
+            posY: y + Math.sin(angle) * 5,
+            velocityX: Math.cos(angle) * speed,
+            velocityY: Math.sin(angle) * speed,
+            life: life,
+            maxLife: life,
+            radius: 2 + Math.random() * 2,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            gravity: 2  // Caída por gravedad
+        };
+        
+        sparklesBuffer.push(sparkle);
+    }
+}
+
+/**
+ * Actualiza y dibuja todas las partículas de explosión.
+ * @param {number} dt - Delta time desde el último frame.
+ */
+function updateSparkles(dt) {
+    for (var i = sparklesBuffer.length - 1; i >= 0; i--) {
+        var sparkle = sparklesBuffer[i];
+        
+        // Actualizar posición
+        sparkle.posX += sparkle.velocityX * dt * 60;
+        sparkle.posY += sparkle.velocityY * dt * 60;
+        
+        // Aplicar gravedad
+        sparkle.velocityY += sparkle.gravity * dt * 10;
+        
+        // Reducir vida
+        sparkle.life -= dt;
+        
+        // Dibujar chispa
+        var alpha = sparkle.life / sparkle.maxLife;  // Desvanecimiento
+        bufferctx.globalAlpha = alpha;
+        bufferctx.fillStyle = sparkle.color;
+        bufferctx.beginPath();
+        bufferctx.arc(sparkle.posX, sparkle.posY, sparkle.radius, 0, Math.PI * 2);
+        bufferctx.fill();
+        bufferctx.globalAlpha = 1;
+        
+        // Remover si se acabó la vida
+        if (sparkle.life <= 0) {
+            sparklesBuffer.splice(i, 1);
+        }
+    }
 }
 
 /******************************* API PÚBLICA *******************************/
