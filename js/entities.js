@@ -215,7 +215,7 @@ function Enemy(life, shots, enemyImages) {
         }
         var disparo = new EvilShot(evil.posX + (evil.image.width / 2) - 5, evil.posY + evil.image.height);
         disparo.add();
-        playSound('Sonidos/Disparo_1.mp3', 0.5);
+        playSound('Sonidos/Disparo_1.mp3', evil instanceof FinalBoss ? 0.06 : 0.12);
         // El delay varía aleatoriamente para que el disparo sea irregular
         var delay = CONFIG.EVIL_SHOT_INTERVAL / 2 + getRandomNumber(CONFIG.EVIL_SHOT_INTERVAL);
         setTimeout(function() {
@@ -368,7 +368,7 @@ function Star() {
             createStarShot(centerX + offsetX, bottomY, 1.5, 3);
         }
         
-        playSound('Sonidos/Disparo_1.mp3', 0.5);
+        playSound('Sonidos/Disparo_1.mp3', 0.12);
         
         // Programar el siguiente disparo
         var delay = CONFIG.EVIL_SHOT_INTERVAL / 2 + getRandomNumber(CONFIG.EVIL_SHOT_INTERVAL);
@@ -532,7 +532,7 @@ function Crab() {
         createCrabShot(centerX + offsetX, centerY - offsetY);
         createCrabShot(centerX + offsetX, centerY + offsetY);
         
-        playSound('Sonidos/Disparo_1.mp3', 0.5);
+        playSound('Sonidos/Disparo_1.mp3', 0.12);
         
         // Programar el siguiente disparo
         var delay = CONFIG.EVIL_SHOT_INTERVAL / 2 + getRandomNumber(CONFIG.EVIL_SHOT_INTERVAL);
