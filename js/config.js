@@ -18,7 +18,7 @@ var CONFIG = {
     // Enemigos regulares
     EVIL_BASE_SPEED: 1,
     EVIL_BASE_SHOTS: 5,
-    EVIL_BASE_LIFE: 3,
+    EVIL_BASE_LIFE: 2,  // Reducida de 3 para múltiples enemigos simultáneos
     EVIL_TOTAL: 7,
     EVIL_MIN_HORIZONTAL_OFFSET: 100,
     EVIL_MAX_HORIZONTAL_OFFSET: 400,
@@ -30,11 +30,11 @@ var CONFIG = {
     BOSS_SHOTS: 30,
     BOSS_POINTS: 20,
     // Estrellita - Enemigo especial
-    STAR_LIFE: 4,
+    STAR_LIFE: 3,  // Reducida de 4 para múltiples enemigos simultáneos
     STAR_SHOTS: 20,
     STAR_POINTS: 15,
     // Cangrejo - Enemigo con movimiento libre
-    CRAB_LIFE: 3,
+    CRAB_LIFE: 2,  // Reducida de 3 para múltiples enemigos simultáneos
     CRAB_SHOTS: 15,
     CRAB_POINTS: 10,
     CRAB_ANIMATION_FRAMES: 6,  // Número de frames de animación
@@ -62,14 +62,14 @@ var CONFIG = {
         2: {
             name: 'NIVEL 2',
             speedMultiplier: 0.9,
-            totalEnemies: 4,
+            totalEnemies: 7,
             baseLife: 4,
             baseShots: 5
         },
         3: {
             name: 'NIVEL 3',
             speedMultiplier: 1.1,
-            totalEnemies: 4,
+            totalEnemies: 9,
             baseLife: 5,
             baseShots: 6
         },
