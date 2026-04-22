@@ -772,6 +772,38 @@ function spawnNextEvil() {
 }
 
 /**
+ * [DEBUG] Salta directamente al nivel indicado (1-4).
+ * @param {number} targetLevel - Nivel destino.
+ */
+function debugJumpToLevel(targetLevel) {
+    if (targetLevel < 1 || targetLevel > 4) return;
+    if (targetLevel === currentLevel) return;
+    if (gamePaused) togglePause();  // Reanudar si estaba pausado
+    var livesBeforeTransition = player ? player.life : 0;
+    currentLevel = targetLevel - 1;  // startNextLevel hará currentLevel++
+    evilCounter = 1;
+    playerShotsBuffer = [];
+    evilShotsBuffer = [];
+    powersBuffer = [];
+    sparklesBuffer = [];
+    evils = [];
+    doubleFireActive = false;
+    shieldActive = false;
+    lifeEffectActive = false;
+    if (doubleFireTimeout) clearTimeout(doubleFireTimeout);
+    if (shieldTimeout) clearTimeout(shieldTimeout);
+    if (lifeEffectTimeout) clearTimeout(lifeEffectTimeout);
+    applyLevelConfiguration(targetLevel);
+    currentLevel = targetLevel;
+    player.speed = playerSpeed;
+    originalPlayerSpeed = playerSpeed;
+    changeTrack(getMusicTrackForLevel(currentLevel));
+    onLevelChanged(currentLevel, livesBeforeTransition);
+    showLevelTransition();
+    createNewEvil();
+}
+
+/**
  * Inicia el siguiente nivel: incrementa currentLevel, aplica su configuración,
  * reinicia contadores y crea el primer enemigo del nuevo nivel.
  */
@@ -846,14 +878,14 @@ function createNewEvil() {
         if (currentLevel === 4) {
             // Nivel 4: JEFE FINAL (siempre uno)
             newEvil = new FinalBoss();
+        } else if (currentLevel === 3 && getRandomNumber(100) < 30) {
+            // Nivel 3: 30% de probabilidad de crear una estrellita
+            newEvil = new Star();
         } else if ((currentLevel === 2 || currentLevel === 3) && getRandomNumber(100) < 50) {
             // Niveles 2-3: 50% de probabilidad de crear un cangrejo
             newEvil = new Crab();
-        } else if ((currentLevel === 2 || currentLevel === 3) && getRandomNumber(100) < 35) {
-            // Niveles 2-3: 35% de probabilidad de crear una estrellita
-            newEvil = new Star();
         } else {
-            // Niveles 1-3: Enemigos regulares
+            // Nivel 1: solo murciélagos. Niveles 2-3: murciélagos como resto
             newEvil = new Evil(evilLife + evilCounter - 1, evilShots + evilCounter - 1);
         }
         
@@ -1040,6 +1072,13 @@ function keyDown(e) {
     if (key === keyMap.pause) {
         e.preventDefault();
         togglePause();
+        return;
+    }
+    
+    // [DEBUG] Teclas 1-4 para saltar de nivel
+    if (key >= 49 && key <= 52 && !youLose && !congratulations && gameStarted) {
+        e.preventDefault();
+        debugJumpToLevel(key - 48);
         return;
     }
     
@@ -1255,6 +1294,12 @@ function showLifeAndScore() {
     bufferctx.fillStyle = '#FFA07A';
     bufferctx.font = 'bold 12px Arial';
     bufferctx.fillText('Bajas: ' + sessionKills, 10, 57);
+
+    // [DEBUG] Indicador de teclas de nivel
+    bufferctx.textAlign = 'right';
+    bufferctx.fillStyle = 'rgba(255,255,100,0.55)';
+    bufferctx.font = '10px monospace';
+    bufferctx.fillText('[DEBUG] 1·2·3·4 = saltar nivel', canvas.width - 5, canvas.height - 5);
     
     // Dibujar corazones rojos en lugar de número de vidas
     bufferctx.textAlign = 'right';
