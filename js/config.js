@@ -27,15 +27,15 @@ var CONFIG = {
     EVIL_OFFSCREEN_MARGIN: 15,    // px fuera de pantalla antes de considerar al enemigo "salido"
     // Jefe final
     BOSS_LIFE: 12,
-    BOSS_SHOTS: 30,
+    BOSS_SHOTS: 100,
     BOSS_POINTS: 20,
     // Estrellita - Enemigo especial
     STAR_LIFE: 3,  // Reducida de 4 para múltiples enemigos simultáneos
-    STAR_SHOTS: 20,
+    STAR_SHOTS: 100,
     STAR_POINTS: 15,
     // Cangrejo - Enemigo con movimiento libre
     CRAB_LIFE: 2,  // Reducida de 3 para múltiples enemigos simultáneos
-    CRAB_SHOTS: 15,
+    CRAB_SHOTS: 100,
     CRAB_POINTS: 10,
     CRAB_ANIMATION_FRAMES: 6,  // Número de frames de animación
     // Puntuaciones
@@ -54,31 +54,31 @@ var CONFIG = {
     LEVELS: {
         1: {
             name: 'NIVEL 1',
-            speedMultiplier: 0.7,
-            totalEnemies: 1,
+            speedMultiplier: 1,
+            totalEnemies: 3,
             baseLife: 3,
-            baseShots: 4
+            baseShots: 40
         },
         2: {
             name: 'NIVEL 2',
-            speedMultiplier: 0.9,
+            speedMultiplier: 1.2,
             totalEnemies: 7,
             baseLife: 4,
-            baseShots: 5
+            baseShots: 50
         },
         3: {
             name: 'NIVEL 3',
-            speedMultiplier: 1.1,
+            speedMultiplier: 1.5,
             totalEnemies: 9,
             baseLife: 5,
-            baseShots: 6
+            baseShots: 50
         },
         4: {
             name: 'JEFE FINAL',
-            speedMultiplier: 1.2,
+            speedMultiplier: 1.5,
             totalEnemies: 1,
             baseLife: 6,
-            baseShots: 7,
+            baseShots: 50,
             isBossLevel: true
         }
     },
