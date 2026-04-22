@@ -24,6 +24,7 @@ var canvas, ctx, buffer, bufferctx;
 var player, evil, playerShot;
 var evils = [];  // Array de enemigos activos simultáneamente
 var bgMain, bgBoss;
+var currentWaveSize = 1;  // Tamaño de la horda actual (aumenta 1 por horda)
 
 var evilSpeed     = CONFIG.EVIL_BASE_SPEED;
 var totalEvils    = CONFIG.EVIL_TOTAL;
@@ -722,6 +723,7 @@ function applyLevelConfiguration(levelNumber) {
         totalEvils = levelConfig.totalEnemies;
         evilLife = levelConfig.baseLife;
         evilShots = levelConfig.baseShots;
+        currentWaveSize = 1;  // Reiniciar hordas al comenzar cada nivel
         
         // Configurar estadísticas del jefe final para el nivel 4
         if (levelNumber === 4) {
@@ -749,6 +751,7 @@ function verifyToCreateNewEvil() {
     // Si no hay enemigos vivos, crear el siguiente
     if (aliveEnemies === 0) {
         if (totalEvils > 0) {
+            currentWaveSize++;  // Siguiente horda tiene un enemigo más
             setTimeout(spawnNextEvil, getRandomNumber(CONFIG.NEW_EVIL_MAX_DELAY));
         } else {
             // Verificar si hay siguiente nivel
@@ -835,14 +838,8 @@ function showVictoryOverlay() {
  * Con probabilidad, puede crear una estrellita especial en niveles 2-3.
  */
 function createNewEvil() {
-    // Determinar cantidad de enemigos a crear
-    var enemyCount = 1;
-    
-    // Si restan 4 o menos enemigos, crear 2-3 enemigos en lugar de 1
-    if (totalEvils <= 4) {
-        enemyCount = Math.random() < 0.5 ? 2 : 3;
-        enemyCount = Math.min(enemyCount, totalEvils);  // No crear más de los que quedan
-    }
+    // Número de enemigos a crear esta horda (respetando los que quedan)
+    var enemyCount = Math.min(currentWaveSize, totalEvils);
     
     for (var i = 0; i < enemyCount; i++) {
         var newEvil;
