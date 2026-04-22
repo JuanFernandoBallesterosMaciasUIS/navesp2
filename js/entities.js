@@ -109,6 +109,9 @@ function Enemy(life, shots, enemyImages) {
     this.minX = getRandomNumber(canvas.width - desplazamientoHorizontal);
     this.maxX = this.minX + desplazamientoHorizontal - 40;
     this.direction = 'D';
+    this.vertDirection = 'D';
+    this.minY = 30;
+    this.maxY = Math.floor(canvas.height * 0.55);
 
     this.reappear = function() {
         this.posY = -50; // Reinicia la posición vertical
@@ -117,6 +120,7 @@ function Enemy(life, shots, enemyImages) {
             getRandomNumber(maxHorizontalOffset - minHorizontalOffset);
         this.minX = getRandomNumber(canvas.width - desplazamientoHorizontal);
         this.maxX = this.minX + desplazamientoHorizontal - 40;
+        this.vertDirection = 'D';
     };
 
     this.kill = function() {
@@ -127,7 +131,26 @@ function Enemy(life, shots, enemyImages) {
     };
 
     this.update = function (dt) {
-        this.posY += this.goDownSpeed * dt * 60;
+        // Movimiento vertical con rebote
+        if (this.posY < this.minY) {
+            // Aún entrando desde arriba — seguir bajando
+            this.posY += this.goDownSpeed * dt * 60;
+            this.vertDirection = 'D';
+        } else if (this.vertDirection === 'D') {
+            if (this.posY < this.maxY) {
+                this.posY += this.goDownSpeed * dt * 60;
+            } else {
+                this.vertDirection = 'U';
+                this.posY -= this.goDownSpeed * dt * 60;
+            }
+        } else {
+            if (this.posY > this.minY) {
+                this.posY -= this.goDownSpeed * dt * 60;
+            } else {
+                this.vertDirection = 'D';
+                this.posY += this.goDownSpeed * dt * 60;
+            }
+        }
         if (this.direction === 'D') {
             if (this.posX <= this.maxX) {
                 this.posX += this.speed * dt * 60;
