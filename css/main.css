@@ -411,6 +411,11 @@ div.overlay-content {
     align-items: center;
     justify-content: center;
     overflow: hidden;
+
+    background-image: url("../images/imageizq.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .panel-left-img {
@@ -435,10 +440,16 @@ div.overlay-content {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    background-image: url("../images/imageizq.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
 }
 
 .main-menu-scores-panel.hidden {
-    display: none;
+   
+    display: none; 
 }
 
 /* ===== PANEL DE PUNTUACIONES EN PARTIDA (fuera del overlay) ===== */
@@ -457,6 +468,11 @@ div.overlay-content {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+
+    background-image: url("../images/imageizq.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .current-score-box {
