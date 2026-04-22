@@ -25,6 +25,7 @@ var player, evil, playerShot;
 var evils = [];  // Array de enemigos activos simultáneamente
 var bgMain, bgBoss;
 var currentWaveSize = 1;  // Tamaño de la horda actual (aumenta 1 por horda)
+var bossNextMinionType = 0;  // 0=Murciélago, 1=Cangrejo, 2=Estrella (ciclo de esbirros del jefe)
 
 var evilSpeed     = CONFIG.EVIL_BASE_SPEED;
 var totalEvils    = CONFIG.EVIL_TOTAL;
@@ -728,6 +729,7 @@ function applyLevelConfiguration(levelNumber) {
         if (levelNumber === 4) {
             finalBossLife = CONFIG.BOSS_LIFE + 8;  // Jefe más fuerte en nivel 4
             finalBossShots = CONFIG.BOSS_SHOTS + 15;
+            bossNextMinionType = 0;  // Reiniciar ciclo de esbirros
         }
     }
 }
@@ -878,12 +880,113 @@ function showVictoryOverlay() {
 }
 
 /**
+ * Retorna cuántos esbirros debe haber en pantalla según la vida actual del jefe.
+ * Fase 1 (>66% vida): 1 esbirro. Fase 2 (>33%): 2. Fase 3 (≤33%): 3.
+ * @param {number} bossLife    - Vida actual del jefe.
+ * @param {number} bossMaxLife - Vida máxima del jefe.
+ * @returns {number} Número de esbirros objetivo.
+ */
+function getBossTargetMinions(bossLife, bossMaxLife) {
+    var pct = bossLife / bossMaxLife;
+    if (pct > 0.66) return 1;
+    if (pct > 0.33) return 2;
+    return 3;
+}
+
+/**
+ * Crea un esbirro para el nivel del jefe, ciclando entre Evil→Crab→Star
+ * y evitando repetir el mismo tipo si ya está vivo en pantalla.
+ * @returns {Enemy} Nuevo esbirro con isBossMinion=true.
+ */
+function createBossMinion() {
+    // Recolectar tipos de esbirros ya vivos
+    var liveTypes = [];
+    for (var i = 0; i < evils.length; i++) {
+        if (evils[i].isBossMinion && !evils[i].dead) {
+            liveTypes.push(evils[i]._minionType);
+        }
+    }
+    // Avanzar ciclo hasta encontrar un tipo que no esté ya en pantalla
+    var type = bossNextMinionType;
+    var attempts = 0;
+    while (liveTypes.indexOf(type) !== -1 && attempts < 3) {
+        type = (type + 1) % 3;
+        attempts++;
+    }
+    bossNextMinionType = (type + 1) % 3;
+
+    var minion;
+    if (type === 0) {
+        minion = new Evil(evilLife, evilShots);
+    } else if (type === 1) {
+        minion = new Crab();
+    } else {
+        minion = new Star();
+    }
+    minion.isBossMinion = true;
+    minion._minionType = type;
+    return minion;
+}
+
+/**
+ * Reemplaza un esbirro muerto del jefe si aún hacen falta según la fase actual.
+ * Llamado desde Enemy.kill() cuando isBossMinion===true.
+ */
+function spawnBossMinion() {
+    if (currentLevel !== 4 || youLose || congratulations) return;
+    // Verificar que el jefe siga vivo
+    var boss = null;
+    for (var i = 0; i < evils.length; i++) {
+        if (evils[i] instanceof FinalBoss && !evils[i].dead) {
+            boss = evils[i];
+            break;
+        }
+    }
+    if (!boss) return;  // Jefe ya muerto, no reponer esbirros
+
+    var liveMinions = 0;
+    for (var j = 0; j < evils.length; j++) {
+        if (evils[j].isBossMinion && !evils[j].dead) liveMinions++;
+    }
+    var target = getBossTargetMinions(boss.life, boss.maxLife);
+    if (liveMinions < target) {
+        evils.push(createBossMinion());
+    }
+}
+
+/**
+ * Comprueba si el jefe acaba de cruzar un umbral de fase y, si es así,
+ * añade esbirros adicionales inmediatamente.
+ * @param {FinalBoss} boss - Instancia del jefe.
+ */
+function checkBossPhase(boss) {
+    var liveMinions = 0;
+    for (var i = 0; i < evils.length; i++) {
+        if (evils[i].isBossMinion && !evils[i].dead) liveMinions++;
+    }
+    var target = getBossTargetMinions(boss.life, boss.maxLife);
+    while (liveMinions < target) {
+        evils.push(createBossMinion());
+        liveMinions++;
+    }
+}
+
+/**
  * Crea el siguiente enemigo y lo asigna a la variable `evil`.
  * Crea un FinalBoss en el nivel 4; en caso contrario, crea un Evil
  * con vidas y disparos incrementados según evilCounter.
  * Con probabilidad, puede crear una estrellita especial en niveles 2-3.
  */
 function createNewEvil() {
+    if (currentLevel === 4) {
+        // Nivel 4: crear el jefe + primer esbirro de la fase 1
+        var boss = new FinalBoss();
+        evils.push(boss);
+        evil = boss;
+        evils.push(createBossMinion());
+        return;
+    }
+
     // Número de enemigos a crear esta horda (respetando los que quedan)
     var enemyCount = Math.min(currentWaveSize, totalEvils);
     
@@ -946,6 +1049,10 @@ function checkCollisions(shot) {
             if (currentEvil.life > 1) {
                 playSound('Sonidos/Boom.mp3', 1);
                 currentEvil.life--;
+                // Si es el jefe, verificar si cambió de fase y añadir esbirros
+                if (currentEvil instanceof FinalBoss) {
+                    checkBossPhase(currentEvil);
+                }
             } else {
                 if (currentEvil instanceof FinalBoss) {
                     playSound('Sonidos/Boom_nave_Final.mp3', 1);

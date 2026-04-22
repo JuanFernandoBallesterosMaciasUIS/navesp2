@@ -123,6 +123,8 @@ function Enemy(life, shots, enemyImages) {
     this.shots = shots ? shots : evilShots;
     this.totalShots = this.shots;
     this.dead = false;
+    this.isBossMinion = false;   // true si es esbirro del nivel jefe
+    this._minionType = -1;       // tipo de esbirro (0=Evil,1=Crab,2=Star)
 
     var desplazamientoHorizontal = minHorizontalOffset +
         getRandomNumber(maxHorizontalOffset - minHorizontalOffset);
@@ -145,9 +147,14 @@ function Enemy(life, shots, enemyImages) {
 
     this.kill = function() {
         this.dead = true;
-        totalEvils--;
         this.image = enemyImages.killed;
-        verifyToCreateNewEvil();
+        if (this.isBossMinion) {
+            // Los esbirros no consumen totalEvils; se reponen solos
+            setTimeout(spawnBossMinion, 1000);
+        } else {
+            totalEvils--;
+            verifyToCreateNewEvil();
+        }
     };
 
     this.update = function (dt) {
