@@ -690,10 +690,9 @@ function resetGameState() {
     youLose       = false;
     congratulations = false;
     playerShotsBuffer = [];
-    evilShotsBuffer   = [];
     powersBuffer      = [];    // Limpiar poderes
     sparklesBuffer    = [];    // Limpiar partículas de explosión
-    evils             = [];    // Limpiar enemigos activos
+    killAllActiveEnemies();    // Corta cadenas de disparo y limpia evils + evilShotsBuffer
     now            = 0;
     nextPlayerShot = 0;
     finalAnimationTick = 0;
@@ -772,6 +771,23 @@ function spawnNextEvil() {
 }
 
 /**
+ * Marca todos los enemigos activos como muertos para cortar sus cadenas de disparo,
+ * y limpia los buffers de disparos enemigos y el array de enemigos.
+ */
+function killAllActiveEnemies() {
+    for (var i = 0; i < evils.length; i++) {
+        evils[i].dead = true;  // Detiene el setTimeout de shoot() de cada instancia
+        // Si es una estrellita, limpiar también su timeout propio
+        if (evils[i].shotTimeout) {
+            clearTimeout(evils[i].shotTimeout);
+            evils[i].shotTimeout = null;
+        }
+    }
+    evils = [];
+    evilShotsBuffer = [];
+}
+
+/**
  * [DEBUG] Salta directamente al nivel indicado (1-4).
  * @param {number} targetLevel - Nivel destino.
  */
@@ -783,10 +799,9 @@ function debugJumpToLevel(targetLevel) {
     currentLevel = targetLevel - 1;  // startNextLevel hará currentLevel++
     evilCounter = 1;
     playerShotsBuffer = [];
-    evilShotsBuffer = [];
     powersBuffer = [];
     sparklesBuffer = [];
-    evils = [];
+    killAllActiveEnemies();  // Corta cadenas de disparo y limpia evils + evilShotsBuffer
     doubleFireActive = false;
     shieldActive = false;
     lifeEffectActive = false;
@@ -812,10 +827,9 @@ function startNextLevel() {
     currentLevel++;
     evilCounter = 1;
     playerShotsBuffer = [];
-    evilShotsBuffer = [];
     powersBuffer = [];   // Limpiar poderes al cambiar de nivel
     sparklesBuffer = []; // Limpiar partículas de explosión al cambiar de nivel
-    evils = [];          // Limpiar enemigos activos al cambiar de nivel
+    killAllActiveEnemies();  // Corta cadenas de disparo y limpia evils + evilShotsBuffer
     // Resetear efectos de poderes
     doubleFireActive = false;
     shieldActive = false;

@@ -201,23 +201,25 @@ function Enemy(life, shots, enemyImages) {
         return this.posY > (canvas.height + CONFIG.EVIL_OFFSCREEN_MARGIN);
     };
 
+    var self = this;  // Capturar instancia para los closures de disparo
+
     this.restartShooting = function() {
-        this.shots = this.totalShots;
+        self.shots = self.totalShots;
         setTimeout(function() {
             shoot();
         }, CONFIG.EVIL_FIRST_SHOT_BASE + getRandomNumber(CONFIG.EVIL_FIRST_SHOT_EXTRA));
     };
 
     function shoot() {
-        // Detener la cadena solo si el juego terminó o el enemigo murió
-        if (youLose || congratulations || evil.dead) {
+        // Detener la cadena solo si el juego terminó o este enemigo específico murió
+        if (youLose || congratulations || self.dead) {
             return;
         }
         // Si está pausado, esperar sin disparar pero manteniendo la cadena viva
         if (!gamePaused) {
-            var disparo = new EvilShot(evil.posX + (evil.image.width / 2) - 5, evil.posY + evil.image.height);
+            var disparo = new EvilShot(self.posX + (self.image.width / 2) - 5, self.posY + self.image.height);
             disparo.add();
-            playSound('Sonidos/Disparo_1.mp3', evil instanceof FinalBoss ? 0.06 : 0.12);
+            playSound('Sonidos/Disparo_1.mp3', self instanceof FinalBoss ? 0.06 : 0.12);
         }
         var delay = CONFIG.EVIL_SHOT_INTERVAL / 2 + getRandomNumber(CONFIG.EVIL_SHOT_INTERVAL);
         setTimeout(function() {
