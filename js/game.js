@@ -1085,6 +1085,11 @@ function showLifeAndScore() {
     bufferctx.font = 'bold 12px Arial';
     var enemyText = 'Enemigos: ' + totalEvils + (currentLevel === 4 ? ' (JEFE)' : '');
     bufferctx.fillText(enemyText, 10, 40);
+
+    // Mostrar total de bajas acumuladas en la sesión
+    bufferctx.fillStyle = '#FFA07A';
+    bufferctx.font = 'bold 12px Arial';
+    bufferctx.fillText('Bajas: ' + sessionKills, 10, 57);
     
     // Dibujar corazones rojos en lugar de número de vidas
     bufferctx.textAlign = 'right';
@@ -1098,7 +1103,7 @@ function showLifeAndScore() {
     
     // Mostrar indicadores de efectos activos
     bufferctx.textAlign = 'left';
-    var yOffset = 60;
+    var yOffset = 75;
     if (doubleFireActive) {
         bufferctx.fillStyle = '#FFD93D';
         bufferctx.font = 'bold 14px Arial';
