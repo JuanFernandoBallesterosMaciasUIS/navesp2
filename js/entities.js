@@ -209,14 +209,16 @@ function Enemy(life, shots, enemyImages) {
     };
 
     function shoot() {
-        // No disparar si el juego está en pausa, terminado o el enemigo muerto
-        if (gamePaused || youLose || congratulations || evil.dead) {
+        // Detener la cadena solo si el juego terminó o el enemigo murió
+        if (youLose || congratulations || evil.dead) {
             return;
         }
-        var disparo = new EvilShot(evil.posX + (evil.image.width / 2) - 5, evil.posY + evil.image.height);
-        disparo.add();
-        playSound('Sonidos/Disparo_1.mp3', evil instanceof FinalBoss ? 0.06 : 0.12);
-        // El delay varía aleatoriamente para que el disparo sea irregular
+        // Si está pausado, esperar sin disparar pero manteniendo la cadena viva
+        if (!gamePaused) {
+            var disparo = new EvilShot(evil.posX + (evil.image.width / 2) - 5, evil.posY + evil.image.height);
+            disparo.add();
+            playSound('Sonidos/Disparo_1.mp3', evil instanceof FinalBoss ? 0.06 : 0.12);
+        }
         var delay = CONFIG.EVIL_SHOT_INTERVAL / 2 + getRandomNumber(CONFIG.EVIL_SHOT_INTERVAL);
         setTimeout(function() {
             shoot();
@@ -338,9 +340,16 @@ function Star() {
     };
     
     function starShoot() {
-        // No disparar si el juego está en pausa, terminado o el enemigo muerto
-        if (gamePaused || youLose || congratulations || evil.dead || !(evil instanceof Star)) {
+        // Detener la cadena solo si el juego terminó o la estrellita murió
+        if (youLose || congratulations || self.dead) {
             self.shotTimeout = null;
+            return;
+        }
+        
+        if (gamePaused) {
+            // Mantener cadena viva durante pausa sin disparar
+            var delayPausa = CONFIG.EVIL_SHOT_INTERVAL / 2 + getRandomNumber(CONFIG.EVIL_SHOT_INTERVAL);
+            self.shotTimeout = setTimeout(function() { starShoot(); }, delayPausa);
             return;
         }
         
@@ -502,9 +511,16 @@ function Crab() {
     };
     
     function crabShoot() {
-        // No disparar si el juego está en pausa, terminado o el enemigo muerto
-        if (gamePaused || youLose || congratulations || evil.dead || !(evil instanceof Crab)) {
+        // Detener la cadena solo si el juego terminó o el cangrejo murió
+        if (youLose || congratulations || self.dead) {
             self.shotTimeout = null;
+            return;
+        }
+        
+        if (gamePaused) {
+            // Mantener cadena viva durante pausa sin disparar
+            var delayPausa = CONFIG.EVIL_SHOT_INTERVAL / 2 + getRandomNumber(CONFIG.EVIL_SHOT_INTERVAL);
+            self.shotTimeout = setTimeout(function() { crabShoot(); }, delayPausa);
             return;
         }
         
