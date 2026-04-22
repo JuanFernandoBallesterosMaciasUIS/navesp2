@@ -1118,17 +1118,32 @@ function showLifeAndScore() {
  */
 function drawDoubleFirEffect() {
     var cannonColor = '#FFD93D';  // Amarillo para los cañones
-    var glowColor = '#FFFF00';   // Amarillo brillante para el brillo
+    var glowColor = '#FFFF00';   // Amarillo brillante
     var playerCenterX = player.posX + player.width / 2;
     var playerCenterY = player.posY + player.height / 2;
     
-    // Efecto pulsante: brillo de los cañones
+    // Múltiples pulsos para efecto más dinámico
     var pulseValue = (Math.sin(now * 8) + 1) / 2;  // Oscila entre 0 y 1
-    bufferctx.globalAlpha = 0.6 + (pulseValue * 0.4);  // Oscila entre 0.6 y 1.0
+    var pulseValue2 = (Math.sin(now * 6 + 2) + 1) / 2;  // Desfasado
+    var pulse3 = (Math.sin(now * 10) + 1) / 2;  // Más rápido
+    bufferctx.globalAlpha = 0.7 + (pulseValue * 0.3);  // Base más visible
     
     // CAÑÓN IZQUIERDO
     var leftCannonX = player.posX + 8;
     var leftCannonY = player.posY + 20;
+    
+    // Brillo radiante izquierdo (círculos pulsantes)
+    var glowRadius1 = 15 + pulse3 * 5;
+    bufferctx.fillStyle = 'rgba(255, 217, 61, ' + (0.15 - pulseValue * 0.1) + ')';
+    bufferctx.beginPath();
+    bufferctx.arc(leftCannonX + 7, leftCannonY + 11, glowRadius1, 0, Math.PI * 2);
+    bufferctx.fill();
+    
+    var glowRadius2 = 10 + pulseValue2 * 8;
+    bufferctx.fillStyle = 'rgba(255, 255, 0, ' + (0.2 - pulseValue2 * 0.15) + ')';
+    bufferctx.beginPath();
+    bufferctx.arc(leftCannonX + 7, leftCannonY + 11, glowRadius2, 0, Math.PI * 2);
+    bufferctx.fill();
     
     // Base del cañón (rectángulo redondeado)
     bufferctx.fillStyle = cannonColor;
@@ -1148,7 +1163,7 @@ function drawDoubleFirEffect() {
     bufferctx.fillStyle = cannonColor;
     bufferctx.fillRect(leftCannonX + 3, leftCannonY - 8, 8, 10);
     
-    // Punta del cañón izquierdo (triángulo)
+    // Punta del cañón izquierdo (triángulo con brillo)
     bufferctx.fillStyle = glowColor;
     bufferctx.beginPath();
     bufferctx.moveTo(leftCannonX + 5, leftCannonY - 8);
@@ -1156,15 +1171,43 @@ function drawDoubleFirEffect() {
     bufferctx.lineTo(leftCannonX + 8, leftCannonY - 14);
     bufferctx.fill();
     
-    // Destello en la punta
-    bufferctx.fillStyle = 'rgba(255, 255, 255, ' + (0.4 + pulseValue * 0.6) + ')';
+    // Rayos de energía desde la punta
+    bufferctx.strokeStyle = 'rgba(255, 255, 0, ' + (0.6 + pulseValue * 0.4) + ')';
+    bufferctx.lineWidth = 1;
+    for (var i = 0; i < 4; i++) {
+        var angle = (i / 4) * Math.PI * 2 - Math.PI / 2 + (now / 500);
+        var startX = leftCannonX + 8;
+        var startY = leftCannonY - 14;
+        var endX = startX + Math.cos(angle) * (8 + pulseValue * 4);
+        var endY = startY + Math.sin(angle) * (8 + pulseValue * 4);
+        bufferctx.beginPath();
+        bufferctx.moveTo(startX, startY);
+        bufferctx.lineTo(endX, endY);
+        bufferctx.stroke();
+    }
+    
+    // Destello intenso en la punta
+    bufferctx.fillStyle = 'rgba(255, 255, 255, ' + (0.6 + pulseValue * 0.4) + ')';
     bufferctx.beginPath();
-    bufferctx.arc(leftCannonX + 8, leftCannonY - 12, 2, 0, Math.PI * 2);
+    bufferctx.arc(leftCannonX + 8, leftCannonY - 12, 2.5 + pulseValue * 1, 0, Math.PI * 2);
     bufferctx.fill();
     
-    // CAÑÓN DERECHO
+    // CAÑÓN DERECHO - MISMO EFECTO
     var rightCannonX = player.posX + player.width - 14;
     var rightCannonY = player.posY + 20;
+    
+    // Brillo radiante derecho
+    var glowRadiusR1 = 15 + pulse3 * 5;
+    bufferctx.fillStyle = 'rgba(255, 217, 61, ' + (0.15 - pulseValue * 0.1) + ')';
+    bufferctx.beginPath();
+    bufferctx.arc(rightCannonX + 7, rightCannonY + 11, glowRadiusR1, 0, Math.PI * 2);
+    bufferctx.fill();
+    
+    var glowRadiusR2 = 10 + pulseValue2 * 8;
+    bufferctx.fillStyle = 'rgba(255, 255, 0, ' + (0.2 - pulseValue2 * 0.15) + ')';
+    bufferctx.beginPath();
+    bufferctx.arc(rightCannonX + 7, rightCannonY + 11, glowRadiusR2, 0, Math.PI * 2);
+    bufferctx.fill();
     
     // Base del cañón (rectángulo redondeado)
     bufferctx.fillStyle = cannonColor;
@@ -1191,17 +1234,39 @@ function drawDoubleFirEffect() {
     bufferctx.lineTo(rightCannonX + 6, rightCannonY - 14);
     bufferctx.fill();
     
-    // Destello en la punta
-    bufferctx.fillStyle = 'rgba(255, 255, 255, ' + (0.4 + pulseValue * 0.6) + ')';
+    // Rayos de energía desde la punta derecha
+    bufferctx.strokeStyle = 'rgba(255, 255, 0, ' + (0.6 + pulseValue * 0.4) + ')';
+    bufferctx.lineWidth = 1;
+    for (var j = 0; j < 4; j++) {
+        var angleR = (j / 4) * Math.PI * 2 - Math.PI / 2 - (now / 500);
+        var startXR = rightCannonX + 6;
+        var startYR = rightCannonY - 14;
+        var endXR = startXR + Math.cos(angleR) * (8 + pulseValue * 4);
+        var endYR = startYR + Math.sin(angleR) * (8 + pulseValue * 4);
+        bufferctx.beginPath();
+        bufferctx.moveTo(startXR, startYR);
+        bufferctx.lineTo(endXR, endYR);
+        bufferctx.stroke();
+    }
+    
+    // Destello intenso en la punta derecha
+    bufferctx.fillStyle = 'rgba(255, 255, 255, ' + (0.6 + pulseValue * 0.4) + ')';
     bufferctx.beginPath();
-    bufferctx.arc(rightCannonX + 6, rightCannonY - 12, 2, 0, Math.PI * 2);
+    bufferctx.arc(rightCannonX + 6, rightCannonY - 12, 2.5 + pulseValue * 1, 0, Math.PI * 2);
     bufferctx.fill();
     
-    // Aura amarilla alrededor del jugador
-    bufferctx.strokeStyle = 'rgba(255, 217, 61, 0.5)';
-    bufferctx.lineWidth = 2;
+    // Aura amarilla dinámica alrededor del jugador
+    bufferctx.strokeStyle = 'rgba(255, 217, 61, ' + (0.4 + pulseValue * 0.3) + ')';
+    bufferctx.lineWidth = 3;
     bufferctx.beginPath();
-    bufferctx.rect(player.posX - 5, player.posY - 5, player.width + 10, player.height + 10);
+    bufferctx.rect(player.posX - 8, player.posY - 8, player.width + 16, player.height + 16);
+    bufferctx.stroke();
+    
+    // Aura interior más sutil
+    bufferctx.strokeStyle = 'rgba(255, 255, 0, ' + (0.2 + pulseValue2 * 0.2) + ')';
+    bufferctx.lineWidth = 1;
+    bufferctx.beginPath();
+    bufferctx.rect(player.posX - 12, player.posY - 12, player.width + 24, player.height + 24);
     bufferctx.stroke();
     
     bufferctx.globalAlpha = 1.0;
@@ -1495,38 +1560,85 @@ function drawTransitionLevel3toBoss() {
  * Dibuja un escudo estilo arcade cuando el jugador tiene el escudo activo.
  */
 function drawShieldEffect() {
-    var shieldColor = '#4ECDC4';  // Azul claro del escudo
+    var shieldColorInner = '#00FFFF';  // Cyan brillante interior
+    var shieldColorOuter = '#4ECDC4';  // Azul claro exterior
     var playerCenterX = player.posX + player.width / 2;
     var playerCenterY = player.posY + player.height / 2;
     var shieldRadius = 45;
     
-    // Efecto pulsante: varía la opacidad según el tiempo
+    // Múltiples pulsos desfasados para efecto más dinámico
     var pulseValue = (Math.sin(now * 5) + 1) / 2;  // Oscila entre 0 y 1
-    var alpha = 0.3 + (pulseValue * 0.3);  // Oscila entre 0.3 y 0.6
+    var pulseValue2 = (Math.sin(now * 4 + 1.5) + 1) / 2;  // Desfasado
+    var pulseValue3 = (Math.sin(now * 6) + 1) / 2;  // Más rápido
     
-    // Guardar el alpha actual
-    bufferctx.globalAlpha = alpha;
+    // Capas de brillo radiante del escudo
+    var glowRadius1 = shieldRadius + 15 + pulseValue2 * 10;
+    bufferctx.globalAlpha = 0.15 - pulseValue * 0.08;
+    bufferctx.fillStyle = shieldColorOuter;
+    bufferctx.beginPath();
+    bufferctx.arc(playerCenterX, playerCenterY, glowRadius1, 0, Math.PI * 2);
+    bufferctx.fill();
     
-    // Dibujar circulo de escudo
-    bufferctx.strokeStyle = shieldColor;
+    var glowRadius2 = shieldRadius + 8 + pulseValue3 * 6;
+    bufferctx.globalAlpha = 0.25 - pulseValue2 * 0.12;
+    bufferctx.fillStyle = shieldColorInner;
+    bufferctx.beginPath();
+    bufferctx.arc(playerCenterX, playerCenterY, glowRadius2, 0, Math.PI * 2);
+    bufferctx.fill();
+    
+    // Círculo principal del escudo con gradiente
+    bufferctx.globalAlpha = 0.4 + (pulseValue * 0.25);
+    bufferctx.strokeStyle = shieldColorInner;
     bufferctx.lineWidth = 3;
     bufferctx.beginPath();
     bufferctx.arc(playerCenterX, playerCenterY, shieldRadius, 0, Math.PI * 2);
     bufferctx.stroke();
     
-    // Dibujar algunos "rayos" alrededor del escudo para efecto arcade
-    bufferctx.lineWidth = 2;
-    for (var i = 0; i < 8; i++) {
-        var angle = (i / 8) * Math.PI * 2;
+    // Círculo exterior adicional
+    bufferctx.globalAlpha = 0.3 + (pulseValue2 * 0.2);
+    bufferctx.strokeStyle = shieldColorOuter;
+    bufferctx.lineWidth = 1.5;
+    bufferctx.beginPath();
+    bufferctx.arc(playerCenterX, playerCenterY, shieldRadius + 5, 0, Math.PI * 2);
+    bufferctx.stroke();
+    
+    // Rayos rotativos alrededor del escudo para efecto arcade mejorado
+    bufferctx.globalAlpha = 0.35 + (pulseValue3 * 0.3);
+    bufferctx.lineWidth = 2.5;
+    var rayCount = 12;  // Más rayos para efecto más denso
+    var rotationOffset = (now / 1000) * Math.PI;  // Rotación continua
+    
+    for (var i = 0; i < rayCount; i++) {
+        var angle = (i / rayCount) * Math.PI * 2 + rotationOffset;
+        var rayLength = 15 + pulseValue * 8;
         var x1 = playerCenterX + Math.cos(angle) * shieldRadius;
         var y1 = playerCenterY + Math.sin(angle) * shieldRadius;
-        var x2 = playerCenterX + Math.cos(angle) * (shieldRadius + 10);
-        var y2 = playerCenterY + Math.sin(angle) * (shieldRadius + 10);
+        var x2 = playerCenterX + Math.cos(angle) * (shieldRadius + rayLength);
+        var y2 = playerCenterY + Math.sin(angle) * (shieldRadius + rayLength);
+        
+        // Alternar colores en los rayos
+        if (i % 3 === 0) {
+            bufferctx.strokeStyle = shieldColorInner;
+        } else {
+            bufferctx.strokeStyle = shieldColorOuter;
+        }
         
         bufferctx.beginPath();
         bufferctx.moveTo(x1, y1);
         bufferctx.lineTo(x2, y2);
         bufferctx.stroke();
+    }
+    
+    // Patrón de puntos pulsantes alrededor del escudo
+    bufferctx.globalAlpha = 0.5 + (pulseValue2 * 0.35);
+    bufferctx.fillStyle = shieldColorInner;
+    for (var j = 0; j < 8; j++) {
+        var dotAngle = (j / 8) * Math.PI * 2;
+        var dotX = playerCenterX + Math.cos(dotAngle) * (shieldRadius - 8);
+        var dotY = playerCenterY + Math.sin(dotAngle) * (shieldRadius - 8);
+        bufferctx.beginPath();
+        bufferctx.arc(dotX, dotY, 2 + pulseValue * 1.5, 0, Math.PI * 2);
+        bufferctx.fill();
     }
     
     // Restaurar el alpha
